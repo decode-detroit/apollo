@@ -28,10 +28,7 @@ extern crate serde;
 // Define program modules
 #[macro_use]
 mod definitions;
-mod item_index;
-mod style_sheet;
 mod system_interface;
-#[cfg(feature = "media-out")]
 #[macro_use]
 mod gtk_interface;
 mod web_interface;
@@ -40,10 +37,7 @@ mod web_interface;
 use crate::definitions::*;
 
 // Import other structures into this module
-#[cfg(feature = "media-out")]
 use self::gtk_interface::GtkInterface;
-use self::item_index::ItemIndex;
-use self::style_sheet::StyleSheet;
 use self::system_interface::SystemInterface;
 use self::web_interface::WebInterface;
 
@@ -66,53 +60,33 @@ use tokio::runtime::Runtime;
 
 // Define program constants
 const LOGO_SQUARE: &str = "logo_square.png";
-const WINDOW_TITLE: &str = "Minerva";
-const USER_STYLE_SHEET: &str = "/tmp/userStyles.css";
+const WINDOW_TITLE: &str = "Apollo";
 
-/// The Minerva structure to contain the program launching and overall
+/// The Apollo structure to contain the program launching and overall
 /// communication code.
 ///
-pub struct Minerva {}
+pub struct Apollo {}
 
-// Implement the Minerva functionality
-impl Minerva {
+// Implement the Apollo functionality
+impl Apollo {
     /// A function to build the main program and the user interface
     ///
     pub fn build_program(application: &gtk::Application) {
         // Create the tokio runtime
         let runtime = Runtime::new().expect("Unable To Create Tokio Runtime.");
 
-        // Create the item index to process item description requests
-        let (mut item_index, index_access) = ItemIndex::new();
-
-        // Run the item index in a new thread (needed here to allow the system interface to load)
-        runtime.spawn(async move {
-            item_index.run().await;
-        });
-
-        // Create the style sheet to process style requests
-        let (mut style_sheet, style_access) = StyleSheet::new();
-
-        // Run the style sheet in a new thread (needed here to allow the system interface to load)
-        runtime.spawn(async move {
-            style_sheet.run().await;
-        });
-
         // Create the interface send
-        #[cfg(feature = "media-out")]
         let (interface_send, gtk_interface_recv, web_interface_recv) = InterfaceSend::new();
-        #[cfg(not(feature = "media-out"))]
-        let (interface_send, web_interface_recv) = InterfaceSend::new();
 
         // Launch the system interface to monitor and handle events
         let (system_interface, web_send) = runtime
             .block_on(async {
-                SystemInterface::new(index_access.clone(), style_access.clone(), interface_send.clone()).await
+                SystemInterface::new(interface_send.clone()).await
             })
             .expect("Unable To Create System Interface.");
 
         // Create a new web interface
-        let mut web_interface = WebInterface::new(index_access.clone(), style_access.clone(), web_send);
+        let mut web_interface = WebInterface::new(web_send);
 
         // Spin the runtime into a native thread
         thread::spawn(move || {
@@ -131,23 +105,17 @@ impl Minerva {
         let window = gtk::ApplicationWindow::new(application);
 
         // Create the gtk interface structure to handle video and media playback
-        #[cfg(feature = "media-out")]
-        GtkInterface::new(
-            gtk_interface_recv,
-        );
-
-        // Open the user interface
-        gtk::show_uri(None, "http://localhost:64636", 0).unwrap_or(());
+        let gtk_interface = GtkInterface::new(gtk_interface_recv, window);
 
         // Set the default parameters for the window FIXME
-        /*window.set_title(WINDOW_TITLE);
+        window.set_title(WINDOW_TITLE);
         window.set_icon_from_file(LOGO_SQUARE).unwrap_or(()); // give up if unsuccessful
 
         // Disable the delete button for the window
         window.set_deletable(false);
 
         // Show the window
-        window.show();*/
+        window.show();
     }
 }
 
@@ -163,7 +131,7 @@ fn main() {
 
     // Create the program and launch the background thread
     application.connect_startup(move |gtk_app| {
-        Minerva::build_program(gtk_app);
+        Apollo::build_program(gtk_app);
     });
 
     // Connect the activate-specific function (as compared with open-specific function)
