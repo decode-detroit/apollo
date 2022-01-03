@@ -11,10 +11,8 @@ lto = true
 
 [dependencies]
 failure = "0.1"
-chrono = { version = "0.4", features = ["serde"] }
 fnv = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.8"
 serde_json = "1.0"
 gtk = "0.14"
 gdk = "0.14"
@@ -22,13 +20,9 @@ gio = "0.14"
 gdk-pixbuf = "0.14"
 glib = "0.14"
 cairo-rs = "^0"
-redis = "0.21"
-serial = "0.4"
-byteorder = "1.4"
-zmq = { version = "0.9", optional = true }
-gstreamer = { version = "^0", optional = true }
-gstreamer-video =  { version = "^0", optional = true }
-tokio = { version = "1.11", features = ["macros", "process", "rt-multi-thread", "time"] }
+gstreamer = "0.17"
+gstreamer-video = "^0"
+tokio = { version = "1.15", features = ["macros", "rt-multi-thread"] }
 warp = "0.3"
 async-stream = "0.3"
 futures-util = "0.3"

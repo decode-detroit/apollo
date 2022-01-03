@@ -31,8 +31,8 @@ use gdk::Cursor;
 use gtk::prelude::*;
 
 // Import Gstreamer Library
-use self::gst_video::prelude::*;
 use gstreamer_video as gst_video;
+use gst_video::prelude::*;
 
 // Import FNV HashMap
 use fnv::FnvHashMap;

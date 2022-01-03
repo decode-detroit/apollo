@@ -44,7 +44,7 @@ use gtk;
 use gtk::prelude::*;
 
 // Define user interface constants
-const REFRESH_RATE: u64 = 100; // the display refresh rate in milliseconds
+const REFRESH_RATE: u64 = 10; // the display refresh rate in milliseconds
 
 /// A structure to contain the user interface and handle all updates to the
 /// to the interface.
@@ -56,13 +56,11 @@ pub struct GtkInterface {
 
 // Implement key GtkInterface functionality
 impl GtkInterface {
-    /// A function to create a new, blank instance of the user interface. The
-    /// window provided to the function should be the top-level window for the
-    /// program.
+    /// A function to create a new instance of the gtk interface.
     ///
-    pub fn new(
+    pub fn spawn_interface(
         interface_receive: mpsc::Receiver<InterfaceUpdate>,
-    ) -> Self {
+    ) {
         // Create the video window
         let video_window = VideoWindow::new();
 
@@ -78,12 +76,9 @@ impl GtkInterface {
             Continue(true) // continue looking for updates indefinitely
         });
         glib::timeout_add_local(Duration::from_millis(REFRESH_RATE), update_interface); // triggers once every 100ms
-
-        // Return the new GtkInterface
-        gtk_interface
     }
 
-    /// A method to listen for modifications to the user interface.
+    /// A method to listen for modifications to the gtk interface.
     ///
     /// This method listens on the provided interface_update line for any changes
     /// to the interface. The method then processes any/all of these updates
@@ -100,7 +95,6 @@ impl GtkInterface {
 
             // Unpack the updates of every type
             match update {
-
                 // Launch the video window or load the new stream
                 InterfaceUpdate::Video { video_stream } => {
                     // Attempt to get a mutable copy of the video_window
@@ -120,9 +114,6 @@ impl GtkInterface {
                         video_window.clear_all();
                     }
                 }
-
-                // Ignore all other types of updates
-                _ => (),
             }
         }
     }

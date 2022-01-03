@@ -1,59 +1,50 @@
-# Minerva
-#### Interactive Show Control
+# Apollo
+#### Realtime Remote-Controlled Multimedia Player
 
-Quickly configure and control an interactive show, no programming experience necessary.
-
-* **Plug-And-Play**: Control video, audio, DMX, LEDs, microcontrollers, and other common show elements with the connection modules. You can run everthing on a single computer or seamlessly connect multiple computers for large installations.
-
-* **Interactive**: Trigger linked events from the user interface, connected devices, or the web endpoint. Minerva supports multiple protocols for bidirectional communication with microcontrollers (Arduino, RaspberryPi, ESP, and others) and includes a simple framework for new protocols.
-
-* **Reliable**: Minerva is written in pure Rust, a threadsafe language. The software has been extensively tested (in real-world installations) and includes an optional live-backup feature to resume instantly if power is lost.
-
-### In Active Development
-
-Minerva is in active development and we are migrating to a web interface. You can find a stable copy of the GTK interface under the [gtk-interface branch](https://github.com/decode-detroit/minerva/tree/gtk-interface) which is locked at version 0.9.0.
-
-The program will move to a completely web-based interface with version 1.0, expected in January of 2022.
+This media player is designed for realtime playback of audio and video in theatrical and interactive applications. Configure the display locations and cue new media over http, either on the same computer or from the web.
 
 ## Getting Started
 
-If you're on a 64-bit GNU/Linux system, you can use the the [binary release here](https://github.com/decode-detroit/minerva/releases) and skip down to [Installing Extras](#Installing-Extras) below.
+Binary releases (for GNU/Linux systems) coming soon. Not tested on Windows or Mac, but it should compile.
 
-If you're on Windows or Mac, binaries are still a work in progress.
-
-## Compile From Source (Cross-Platform)
-
-If you would like to contribute to Minerva, or if you are on Windows or Mac, you'll need to compile from source. Start with these prerequisites.
+In the meantime, you'll need a few things to compile and run Apollo:
 
 ### Prerequisites
 
-You'll need Rust and GTK+ to compile and run Minerva.
+You'll need Rust, GTK+, and GStreamer to compile and run Minerva.
 
 * Installation of Rust: https://www.rust-lang.org/
 * Installation of GTK+: https://www.gtk.org/ (This is usually installed already on GNU/Linux systems. Search for package libgtk-3-0.)
 
 Follow the directions on both websites to download and install these tools before you proceed.
 
+To install GStreamer on a Debian-like system,
+```
+sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav libgstrtspserver-1.0-dev libges-1.0-dev
+```
+
+If you're on a different system, you'll need to follow the platform-specific instructions for GStreamer-rs: https://gitlab.freedesktop.org/gstreamer/gstreamer-rs
+
 ### Compiling
 
-Once you have installed the two prerequities above, clone or download this repository. Then compile and run the program using Cargo (included with Rust):
+Once you have installed the prerequities above, clone or download this repository. Then compile and run the program using Cargo (included with Rust):
 ```
 cargo run
 ```
 
-This will take several minutes to download all the components. You'll be left with a running Minerva instance with an example configuration loaded. You can use
+This will take several minutes to download all the components. You'll be left with a running Apollo instance in the background. You can use
 ```
 cargo run
 ```
 
-to run Minerva again (it will not recompile this time). This is a debug version (larger file, but otherwise perfectly functional).
+to run Apollo again (it will not recompile this time). This is a debug version (larger file, but otherwise perfectly functional).
 
 To compile a finished copy for deployment, use
 ```
 cargo build --release
 ```
 
-The completed binary will be located in the automatically generated "target/release" folder with the name "minerva".
+The completed binary will be located in the automatically generated "target/release" folder with the name "apollo".
 
 ### Issues Compiling
 
@@ -69,78 +60,90 @@ gdk-3.0 issue:
 sudo apt install build-essential libgtk-3-dev
 ```
 
-## Installing Extras
+## Usage
 
-Extras! Everyone loves extras. To take advantage of all Minerva's features, you'll need ZMQ bindings, the Gstreamer library, and a Redis server.
+To play media on Apollo, you need to
+1. Define the media channel, and
+2. Tell Apollo what media to play on that channel.
 
-* **ZMQ bindings** provide an easy and reliable way to network your devices.
-* **GStreamer** controls media playback directly within Minerva.
-* **Redis** provides real-time crash recovery.
+You can have as many channels as you like (currrently tested with eleven simultaneous channels), but only one piece of media playing on each channel at a time.
 
-You'll need to install these tools on whichever computers you would like to **run** Minerva.
+### Media Channel Options
 
-### ZMQ for Communication
+When you define a channel, you have the option to specify where the audio is played and where the video is played. If you leave these options empty, Apollo with use the system default for audio and open a new window (sized to the content) to play video.
 
-Enable reliable messaging to other devices by compiling with the "zmq-comm" feature.
+Here are the media channel options:
+* channel: the channel number
+* videoWindow: a structure that defines the location and size of the video screen. Defaults to a new window generated by gstreamer.
+* windowDimensions: a two element tuple that specifies the minimum size of the application window that holds the video screen. New application windows default to fullscreen - use this tool to streach the application window across multiple monitors.
+* audioDevice: the audio device for playing any sound. Defaults to the system default.
+* loopMedia: the media (video or audio) to loop when no other media is playing on this channel. Defaults to nothing if left blank.
+
+A video window has several parameters:
+* windowNumber: a number for the _application_ window. Channels with the same window number will appear on the same application window and will be stacked from first-defined to last-defined on the top.
+* top: distance (in pixels) from the top of the application window to the top of the video.
+* left: distance (in pixels) from the left side of the application window to the left side of the video.
+* height: height (in pixels) of the video screen
+* width: (in pixels) of the video screen
+
+An audio device has several options as well:
+* a Pulse audio device (with deviceName parameter): a high-level toolkit which is recommended for most purposes. Multiple chanels can share a device and will automatically be mixed together.
+* an Alsa device (with deviceName parameter): a lower-level toolkit usefull when trying to pick a specific display on a graphics card. ***WARNING:*** Only one channel can use an Alsa device at a time - Alsa does not have the capability to mixdown multiple audio sources.
+
+### Cue Media Options
+
+When you cue a specific file for Apollo to play, it will begin instantly (or nearly instantly, depending on the capabilities of the computer). You have the option to play any type of media on any channel, though in practice you will typically have separate audio channels and video channels.
+
+Here are the cue media options:
+* uri: the location of the video or audio file to play. The uri format must follow the URI syntax rules. This means local files must be specified like "file:///absolute/path/to/file.mp4".
+* channel: the media channel to play the video or audio. New media sent to the same channel will replace the old media, starting instantly.
+* loopMedia: the location of media to loop after this media is complete. If a file is specified in the loop media field, it takes priority over the channel loop media field.
+
+### RESTful API
+
+You can define media channels and cue media using the two available POST commands on localhost port 27655 (A-P-O-L-L). An example interaction might look like this:
+
 ```
-cargo build --features "zmq-comm"
+let mediaChannel = {
+    channel: 1,
+    videoWindow: {
+        windowNumber: 1,
+        top: 100,
+        left: 100,
+        height: 400,
+        width: 400,
+    },
+}
+
+fetch(`defineChannel`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(mediaChannel),
+});
+
+let mediaCue = {
+    uri: "https://archive.org/download/never-gonna-give-you-up-4-k/Never%20Gonna%20Give%20You%20Up%204K.ia.mp4",
+    channel: 1,
+}
+
+fetch(`cueMedia`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(mediaCue),
+});
 ```
 
-You can install ZMQ bindings on a Debian-like system with
-```
-sudo apt install libzmq3-dev
-```
+The port number will soon be made available as a command line option, but in the meantime, if you need to make Apollo available on a different port or accessible from a different computer, we recommend [Caddy](https://caddyserver.com/). Follow the instructions for setting up a reverse proxy (it will take less than 60 seconds).
 
-Currently, rust-zmq requires ZeroMQ 4.1. If your operating system does not provide packages of a new-enough libzmq, you will have to install it from source. See https://github.com/zeromq/libzmq/releases.
-
-### GStreamer for Audio/Video
-
-Enable audio and video playback by compiling with the "media-out" feature.
-```
-cargo build --features "media-out"
-```
-
-To meet the media playback dependancies, you will need to follow the platform-specific instructions for GStreamer-rs: https://gitlab.freedesktop.org/gstreamer/gstreamer-rs
-
-On a Debian-like system, install gstreamer dependencies with
-```
-sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav libgstrtspserver-1.0-dev libges-1.0-dev
-```
-
-This replaces the separate audio and video features in previous versions and syncronizes the options available to both.
-
-Audio output supports Alsa and Pulse Audio. Each output has its advantages - documentation forthcoming.
-
-### Redis for Instant Recovery
-
-The most up-to-date instructions for installing Redis can be found here: https://redis.io/.
-
-The default configuration should work just fine for most purposes. For super high reliabilty, you'll want to make sure every change is written to the disk (add to redis.conf):
-```
-save 60 1
-```
-
-### DMX For Lighting/Effects Control
-
-The DMX connection doesn't require any additional software or libraries to run and is included by default.
-
-On Debian-like systems, you may need to add your user to the dialout group:
-```
-sudo adduser $USER dialout
-```
-You'll need to log out and log back in for this to take effect.
-
-All DMX channels default to 0. This can cause confusion when the channel isn't explicitly set by the user, but is nonetheless necessary for the device to function. For example, the main dimmer channel on a light fixture needs to be manually set to 255.
-
-### Make It Pretty
-
-GTK can be easily re-themed. We recommend the Materia Dark theme for Minerva which will automatically load if you install the Materia theme package (See here: https://github.com/nana-4/materia-theme). On a GNU/Linux system, simply install the materia-gtk-theme package.
-
-We are migrating to a web interface, so this will not be necessary in the long term.
+In the future, additional options such as pausing media, seeking through media, changing media to a different channel, etc., will be added based on our own needs. If you are using Apollo and have a specific feature you need, feel free to send us an email and we'll do our best to make it a priority.
 
 ## Raspberry Pi-like Systems (ARM)
 
-It's possible to run Minerva on less-capible systems! For example, a Raspberry Pi 4 can manage most of the tasks of a full computer (video is a bit touchy - working on it).
+It's possible to run Apollo on less-capible systems! For example, a Raspberry Pi 4 can manage audio very well, and plays video acceptably (with a small delay at the start of each).
 
 Take careful notes of the steps to
 * cross-compile Minerva, and
@@ -183,8 +186,6 @@ When you compile, pass several environment variables to the compilation.
 env PKG_CONFIG_ALLOW_CROSS=1 PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig/ cargo build_armhf
 ```
 
-Unfortunately, video doesn't seem to work out of the box. If you have success with armhf and video playback, let us know how you pulled it off!
-
 #### Prepare Your Raspberry Pi
 
 In addition to all the packages above (e.g. ZMQ, GStreamer), you need to enable the Fake KMS graphics library and set the graphics memory to 512MB to allow for reliable playback of videos. Use raspi-config to change the settings.
@@ -197,6 +198,6 @@ Please join us in the pursuit of free and open source software for the arts! Ema
 
 ## License
 
-This project is licensed under the GNU GPL Version 3 - see the [LICENSE](LICENSE) file for details
+This project is licensed under the GNU GPL Version 3 - see the [LICENSE](LICENSE) file for details. This project is closely connected to [Minerva](https://github.com/decode-detroit/minerva).
 
-Thanks to all the wonderful free and open source people out there who have made this project possible, especially Mozilla et al. for a beautiful language, the folks at Arduino for the ubiquitous microcontroller platform, and the team at Adafruit for their tireless committment to open source hardware.
+Thanks to all the wonderful free and open source people out there who have made this project possible, especially Mozilla et al. for a beautiful language and the folks at Gnome, GTK, and GStreamer for their ongoing efforts advance multimedia in open source software.

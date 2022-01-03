@@ -76,7 +76,7 @@ impl Apollo {
         let runtime = Runtime::new().expect("Unable To Create Tokio Runtime.");
 
         // Create the interface send
-        let (interface_send, gtk_interface_recv, web_interface_recv) = InterfaceSend::new();
+        let (interface_send, gtk_interface_recv) = InterfaceSend::new();
 
         // Launch the system interface to monitor and handle events
         let (system_interface, web_send) = runtime
@@ -97,15 +97,15 @@ impl Apollo {
 
             // Block on the web interface
             runtime.block_on(async move {
-                web_interface.run(web_interface_recv).await;
+                web_interface.run().await;
             });
         });
 
+        // Create the gtk interface structure to handle video and media playback
+        GtkInterface::spawn_interface(gtk_interface_recv);
+
         // Create the application window, but do not show it
         let window = gtk::ApplicationWindow::new(application);
-
-        // Create the gtk interface structure to handle video and media playback
-        let gtk_interface = GtkInterface::new(gtk_interface_recv, window);
 
         // Set the default parameters for the window FIXME
         window.set_title(WINDOW_TITLE);
@@ -115,7 +115,7 @@ impl Apollo {
         window.set_deletable(false);
 
         // Show the window
-        window.show();
+        //window.show();
     }
 }
 
