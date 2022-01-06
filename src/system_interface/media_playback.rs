@@ -66,6 +66,18 @@ impl MediaPlayback {
         })
     }
 
+    /// A function to stop all playing media
+    /// 
+    pub fn all_stop(&self) -> Result<(), Error> {
+        // Stop the playing media on every channel
+        for (_, channel) in self.channels.iter() {
+            channel.playbin.set_state(gst::State::Null)?;
+        }
+
+        // Indicate success
+        Ok(())
+    }
+
     /// A function a create a new video stream
     ///
     pub fn define_channel(&mut self, media_channel: MediaChannel) -> Result<Option<VideoStream>, Error> {
@@ -179,6 +191,33 @@ impl MediaPlayback {
             // Otherwise, throw an error
             } else {
                 return Err(format_err!("Unable to change loop media."));
+            }
+
+        // Otherwise, throw an error
+        } else {
+            return Err(format_err!("Unable to cue media: Channel not defined."));
+        }
+
+        // Indicate success
+        Ok(())
+    }
+
+    /// A function to change the state of a existing channel
+    /// 
+    pub fn change_state(&self, channel_state: ChannelState) -> Result<(), Error> {
+        // Make sure there is an existing channel
+        if let Some(channel) = self.channels.get(&channel_state.channel) {
+            // Match the new state
+            match channel_state.state {
+                // Switch to playing
+                PlaybackState::Playing => {
+                    channel.playbin.set_state(gst::State::Playing)?;
+                }
+
+                // Switch to Paused
+                PlaybackState::Paused => {
+                    channel.playbin.set_state(gst::State::Paused)?;
+                }
             }
 
         // Otherwise, throw an error

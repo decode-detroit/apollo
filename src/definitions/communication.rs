@@ -70,15 +70,22 @@ pub struct WebRequest {
 ///
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Request {
+    /// A variant to stop all playing media
+    AllStop,
+
     /// A variant to define a new channel
     DefineChannel {
         media_channel: MediaChannel, // the new media channel definition
     },
 
-    /// A special variant to send the "all stop" event which automatically
-    /// is broadcast immediately and clears the event queue.
+    /// A variant to cue media to play on a specific channel
     CueMedia {
         media_cue: MediaCue, 
+    },
+
+    /// A variant to change the playback state of a channel
+    ChangeState {
+        channel_state: ChannelState, 
     },
 }
 

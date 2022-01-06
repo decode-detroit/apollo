@@ -82,6 +82,27 @@ pub struct MediaChannel {
     pub loop_media: Option<String>, // the media (video or audio) to loop when no other media is playing
 }
 
+/// A helper enum to define the playback state of a channel
+///
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PlaybackState {
+    /// A variant to set the channel to playing
+    Playing,
+
+    /// A variant to set the channel to paused
+    Paused,
+}
+
+/// A struct to define changes to playback state of a channel
+///
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChannelState {
+    pub channel: u32,               // the channel of the video or audio
+    pub state: PlaybackState, // the new playback state
+}
+
 /// A type to communicate a video stream to the front end of the program
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct VideoStream {

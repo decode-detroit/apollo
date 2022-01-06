@@ -43,6 +43,13 @@ impl From<MediaCue> for Request {
         }
     }
 }
+impl From<ChannelState> for Request {
+    fn from(channel_state: ChannelState) -> Self {
+        Request::ChangeState {
+            channel_state,
+        }
+    }
+}
 
 /// A structure to contain the web interface and handle all updates to the
 /// to the interface.
@@ -66,6 +73,14 @@ impl WebInterface {
     /// A method to listen for connections from the internet
     ///
     pub async fn run(&mut self) {
+        // Create the all stop filter
+        let all_stop = warp::post()
+            .and(warp::path("cueMedia"))
+            .and(warp::path::end())
+            .and(WebInterface::with_clone(self.web_send.clone()))
+            .and(WebInterface::with_clone(Request::AllStop))
+            .and_then(WebInterface::handle_request);
+
         // Create the define channel filter
         let define_channel = warp::post()
             .and(warp::path("defineChannel"))
@@ -82,9 +97,19 @@ impl WebInterface {
             .and(WebInterface::with_json::<MediaCue>())
             .and_then(WebInterface::handle_request);
 
+        // Create the change state filter
+        let change_state = warp::post()
+            .and(warp::path("changeState"))
+            .and(warp::path::end())
+            .and(WebInterface::with_clone(self.web_send.clone()))
+            .and(WebInterface::with_json::<ChannelState>())
+            .and_then(WebInterface::handle_request);
+
         // Combine the filters
-        let routes = define_channel
-            .or(cue_media);
+        let routes = all_stop
+            .or(define_channel)
+            .or(cue_media)
+            .or(change_state);
 
         // Handle incoming requests on the media port FIXME accept command-line argument
         warp::serve(routes).run(([127, 0, 0, 1], 27655)).await;

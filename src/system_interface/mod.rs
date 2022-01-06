@@ -81,6 +81,19 @@ impl SystemInterface {
             Some(request) = self.web_receive.recv() => {
                 // Match the request subtype
                 match request.request {
+                    // If stopping all the media
+                    Request::AllStop => {
+                        // Try to cue the new media
+                        if let Err(error) = self.media_playback.all_stop() {
+                            // If there was an error, reply with the error
+                            request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(());
+                        
+                        // Otherwise, indicate success
+                        } else {
+                            request.reply_to.send(WebReply::success()).unwrap_or(());
+                        }
+                    }
+
                     // If defining a new channel
                     Request::DefineChannel { media_channel } => {
                         // Add the channel definition
@@ -106,6 +119,19 @@ impl SystemInterface {
                     Request::CueMedia { media_cue } => {
                         // Try to cue the new media
                         if let Err(error) = self.media_playback.cue_media(media_cue) {
+                            // If there was an error, reply with the error
+                            request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(());
+                        
+                        // Otherwise, indicate success
+                        } else {
+                            request.reply_to.send(WebReply::success()).unwrap_or(());
+                        }
+                    }
+
+                    // If changing the state of a channel
+                    Request::ChangeState { channel_state } => {
+                        // Try to cue the new media
+                        if let Err(error) = self.media_playback.change_state(channel_state) {
                             // If there was an error, reply with the error
                             request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(());
                         

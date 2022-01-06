@@ -103,6 +103,14 @@ impl VideoWindow {
         let window_number = video_stream.window_number;
         let dimensions = video_stream.dimensions;
 
+        // Draw a black background
+        video_area.connect_draw(|_, cr| {
+            // Draw the background black
+            cr.set_source_rgb(0.0, 0.0, 0.0);
+            cr.paint().unwrap_or(());
+            Inhibit(true)
+        });
+
         // Connect the realize signal for the video area
         video_area.connect_realize(move |video_area| {
             // Extract a reference for the video overlay
