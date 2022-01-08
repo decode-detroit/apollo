@@ -21,6 +21,9 @@
 // Import crate definitions
 use crate::definitions::*;
 
+//  Import standard library features
+use std::sync::{Arc, Mutex};
+
 // Import Tokio and warp features
 use tokio::sync::oneshot;
 use warp::{http, Filter};
@@ -55,7 +58,8 @@ impl From<ChannelState> for Request {
 /// to the interface.
 ///
 pub struct WebInterface {
-    web_send: WebSend,         // send line to the system interface
+    web_send: WebSend,                  // send line to the system interface
+    user_address: Arc<Mutex<String>>,   // user-defined address
 }
 
 // Implement key Web Interface functionality
@@ -63,10 +67,11 @@ impl WebInterface {
     /// A function to create a new web interface. The send channel should
     /// connect directly to the system interface.
     ///
-    pub fn new(web_send: WebSend) -> Self {
+    pub fn new(web_send: WebSend, user_address: Arc<Mutex<String>>) -> Self {
         // Return the new web interface and runtime handle
         WebInterface {
             web_send,
+            user_address,
         }
     }
 
@@ -111,8 +116,15 @@ impl WebInterface {
             .or(cue_media)
             .or(change_state);
 
-        // Handle incoming requests on the media port FIXME accept command-line argument
-        warp::serve(routes).run(([127, 0, 0, 1], 27655)).await;
+        // Try to extract the user defined address
+        let mut address = DEFAULT_ADDRESS.to_string();
+        if let Ok(lock) = self.user_address.try_lock() {
+            // Copy the address
+            address = lock.clone();
+        }
+
+        // Handle incoming requests on the media port
+        warp::serve(routes).run(address.parse::<std::net::SocketAddr>().unwrap()).await;
     }
 
     /// A function to handle define channel requests

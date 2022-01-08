@@ -17,6 +17,11 @@
 
 //! This module defines all structures and types used across modules.
 
+// Define program constants
+pub const LOGO_SQUARE: &str = "logo_square.png";
+pub const WINDOW_TITLE: &str = "Apollo";
+pub const DEFAULT_ADDRESS: &str = "127.0.0.1:27655";
+
 // Define submodules
 mod communication;
 mod media;

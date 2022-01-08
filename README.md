@@ -11,7 +11,7 @@ In the meantime, you'll need a few things to compile and run Apollo:
 
 ### Prerequisites
 
-You'll need Rust, GTK+, and GStreamer to compile and run Minerva.
+You'll need Rust, GTK+, and GStreamer to compile and run Apollo.
 
 * Installation of Rust: https://www.rust-lang.org/
 * Installation of GTK+: https://www.gtk.org/ (This is usually installed already on GNU/Linux systems. Search for package libgtk-3-0.)
@@ -146,8 +146,8 @@ In the future, additional options such as pausing media, seeking through media, 
 It's possible to run Apollo on less-capible systems! For example, a Raspberry Pi 4 can manage audio very well, and plays video acceptably (with a small delay at the start of each).
 
 Take careful notes of the steps to
-* cross-compile Minerva, and
-* setup your Raspberry Pi host to run Minerva
+* cross-compile Apollo, and
+* setup your Raspberry Pi host to run Apollo
 
 Note: These instructions are written for *compiling* the software on Ubuntu 20.04.
 

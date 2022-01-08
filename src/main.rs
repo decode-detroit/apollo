@@ -21,7 +21,7 @@
 // Allow deeper recursion testing for web server
 #![recursion_limit="256"]
 
-// Import YAML processing libraries
+// Import JSON processing features
 #[macro_use]
 extern crate serde;
 
@@ -43,6 +43,7 @@ use self::web_interface::WebInterface;
 
 // Import standard library features
 use std::thread;
+use std::sync::{Arc, Mutex};
 
 // Import failure features
 #[macro_use]
@@ -58,20 +59,16 @@ use gtk::prelude::*;
 // Import tokio features
 use tokio::runtime::Runtime;
 
-// Define program constants
-const LOGO_SQUARE: &str = "logo_square.png";
-const WINDOW_TITLE: &str = "Apollo";
-
 /// The Apollo structure to contain the program launching and overall
 /// communication code.
 ///
-pub struct Apollo {}
+struct Apollo {}
 
 // Implement the Apollo functionality
 impl Apollo {
     /// A function to build the main program and the user interface
     ///
-    pub fn build_program(application: &gtk::Application) {
+    fn build_program(application: &gtk::Application, address: Arc<Mutex<String>>) {
         // Create the tokio runtime
         let runtime = Runtime::new().expect("Unable To Create Tokio Runtime.");
 
@@ -86,7 +83,7 @@ impl Apollo {
             .expect("Unable To Create System Interface.");
 
         // Create a new web interface
-        let mut web_interface = WebInterface::new(web_send);
+        let mut web_interface = WebInterface::new(web_send, address);
 
         // Spin the runtime into a native thread
         thread::spawn(move || {
@@ -107,7 +104,7 @@ impl Apollo {
         // Create the application window, but do not show it
         let window = gtk::ApplicationWindow::new(application);
 
-        // Set the default parameters for the window FIXME
+        // Set the default parameters for the window FIXME not really needed
         window.set_title(WINDOW_TITLE);
         window.set_icon_from_file(LOGO_SQUARE).unwrap_or(()); // give up if unsuccessful
 
@@ -123,15 +120,35 @@ impl Apollo {
 /// to allow GTK+ to work its startup magic.
 ///
 fn main() {
-    // Initialize tracing FIXME Consider using this for easier debugging
+    // Initialize tracing
     tracing_subscriber::fmt::init();
     
     // Create the gtk application window. Failure results in immediate panic!
     let application = gtk::Application::new(None, gio::ApplicationFlags::empty());
 
+    // Register command line options
+    let address = Arc::new(Mutex::new(String::from(DEFAULT_ADDRESS)));
+    let addr_clone = address.clone();
+    application.add_main_option("address", glib::Char::from(b'a'), glib::OptionFlags::NONE, glib::OptionArg::Int, "Optional listening address for the webserver, default is 127.0.0.01:27655", None);
+    application.connect_handle_local_options(move |_, dict| {
+        // Check to see if port was specified
+        if dict.contains("address") {
+            dict.lookup_value("address", ));
+            // Get a lock on the address
+            if let Ok(lock) = addr_clone.try_lock() {
+                
+                *lock = dict
+                println!("Got something!"); //: {:?}", 
+            }
+        }
+        
+        // Continue the application
+        return -1;
+    });
+
     // Create the program and launch the background thread
     application.connect_startup(move |gtk_app| {
-        Apollo::build_program(gtk_app);
+        Apollo::build_program(gtk_app, args.clone());
     });
 
     // Connect the activate-specific function (as compared with open-specific function)

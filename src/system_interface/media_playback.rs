@@ -114,13 +114,13 @@ impl MediaPlayback {
 
         // If a video window was specified
         let mut video_stream = None;
-        if let Some(video_window) = media_channel.video_window {
+        if let Some(video_frame) = media_channel.video_frame {
             // Compose the allocation
             let allocation = gtk::Rectangle {
-                x: video_window.left,
-                y: video_window.top,
-                width: video_window.width,
-                height: video_window.height,
+                x: video_frame.left,
+                y: video_frame.top,
+                width: video_frame.width,
+                height: video_frame.height,
             };
 
             // Try to create the video overlay
@@ -132,11 +132,11 @@ impl MediaPlayback {
 
             // Send the new video stream to the user interface
             video_stream = Some(VideoStream {
-                window_number: video_window.window_number,
+                window_number: video_frame.window_number,
                 channel: media_channel.channel,
                 allocation,
                 video_overlay,
-                dimensions: media_channel.window_dimensions,
+                dimensions: video_frame.window_dimensions,
             });
         } // Otherwise, any window creation (if needed) is left to gstreamer
 

@@ -217,6 +217,11 @@ impl VideoWindow {
         // Set window parameters
         window.set_decorated(false);
         window.fullscreen();
+        window.set_title(WINDOW_TITLE);
+        window.set_icon_from_file(LOGO_SQUARE).unwrap_or(()); // give up if unsuccessful
+        
+        // Disable the delete button for the window
+        window.set_deletable(false);
 
         // Create black background
         let background = gtk::DrawingArea::new();
