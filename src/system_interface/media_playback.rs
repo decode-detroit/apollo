@@ -136,7 +136,6 @@ impl MediaPlayback {
                 channel: media_channel.channel,
                 allocation,
                 video_overlay,
-                dimensions: video_frame.window_dimensions,
             });
         } // Otherwise, any window creation (if needed) is left to gstreamer
 

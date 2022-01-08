@@ -73,6 +73,11 @@ pub enum Request {
     /// A variant to stop all playing media
     AllStop,
 
+    /// A variant to define a new window
+    DefineWindow {
+        window: WindowDefinition, // the new application window definition
+    },
+
     /// A variant to define a new channel
     DefineChannel {
         media_channel: MediaChannel, // the new media channel definition
@@ -138,8 +143,14 @@ impl WebReply {
 ///
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum InterfaceUpdate {
-    /// A variant to launch the video window
-    Video { video_stream: Option<VideoStream> },
+    /// A variant to define window properties
+    Window { window: WindowDefinition },
+
+    /// A variant to create a new video channel
+    Video { video_stream: VideoStream },
+
+    /// A variant to close all the windows
+    Close,
 }
 
 /// The stucture and methods to send updates to the user interface.

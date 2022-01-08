@@ -45,7 +45,6 @@ pub struct MediaCue {
 #[serde(rename_all = "camelCase")]
 pub struct VideoFrame {
     pub window_number: u32, // the application window number for the channel
-    pub window_dimensions: Option<(i32, i32)>, // the minimum size of the window (defaults to fullscreen, but can be made larger to stretch across multiple screens)
     pub top: i32,           // the distance (in pixels) from the top of the display
     pub left: i32,          // the distance (in pixels) from the left of the display
     pub height: i32,        // the height of the video
@@ -100,15 +99,24 @@ pub enum PlaybackState {
 #[serde(rename_all = "camelCase")]
 pub struct ChannelState {
     pub channel: u32,               // the channel of the video or audio
-    pub state: PlaybackState, // the new playback state
+    pub state: PlaybackState,       // the new playback state
 }
 
-/// A type to communicate a video stream to the front end of the program
+/// A struct to define an application window to hold one or more media channels
+///
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WindowDefinition {
+    pub window_number: u32,         // the channel where the video should be played
+    pub fullscreen: bool,               // a flag to indicate whether the window should be fullscreen
+    pub dimensions: Option<(i32, i32)>, // the minimum dimensions of the window
+}
+
+/// A type to communicate a video stream to the gtk interface
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct VideoStream {
     pub channel: u32,               // the channel where the video should be played
     pub window_number: u32,         // the window where the video should be played
     pub allocation: gtk::Rectangle, // the location of the video in the screen
     pub video_overlay: gst_video::VideoOverlay, // the video overlay which should be connected to the video id
-    pub dimensions: Option<(i32, i32)>, // the minimum dimensions of the window (defaults to fullscreen, but can be made larger to stretch across multiple screens)
 }

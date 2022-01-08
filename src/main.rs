@@ -129,16 +129,20 @@ fn main() {
     // Register command line options
     let address = Arc::new(Mutex::new(String::from(DEFAULT_ADDRESS)));
     let addr_clone = address.clone();
-    application.add_main_option("address", glib::Char::from(b'a'), glib::OptionFlags::NONE, glib::OptionArg::Int, "Optional listening address for the webserver, default is 127.0.0.01:27655", None);
+    application.add_main_option("address", glib::Char::from(b'a'), glib::OptionFlags::NONE, glib::OptionArg::String, "Optional listening address for the webserver, default is 127.0.0.01:27655", None);
     application.connect_handle_local_options(move |_, dict| {
         // Check to see if port was specified
         if dict.contains("address") {
-            dict.lookup_value("address", ));
+            // Try to get the value
+            let variant = dict.lookup_value("address", None).expect("Invalid parameter for option 'address'.");
+
+            // Try to convert it to a string
+            let new_address: String = variant.get().expect("Invalid parameter for option 'address'.");
+            
             // Get a lock on the address
-            if let Ok(lock) = addr_clone.try_lock() {
-                
-                *lock = dict
-                println!("Got something!"); //: {:?}", 
+            if let Ok(mut lock) = addr_clone.try_lock() {
+                // Save the new address (may still be an invalid string)
+                *lock = new_address;
             }
         }
         
@@ -148,7 +152,7 @@ fn main() {
 
     // Create the program and launch the background thread
     application.connect_startup(move |gtk_app| {
-        Apollo::build_program(gtk_app, args.clone());
+        Apollo::build_program(gtk_app, address.clone());
     });
 
     // Connect the activate-specific function (as compared with open-specific function)

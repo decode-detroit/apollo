@@ -87,6 +87,12 @@ impl GtkInterface {
     pub fn check_updates(&self, interface_update: &mpsc::Receiver<InterfaceUpdate>) {
         // Look for any updates and act upon them
         loop {
+            // Attempt to get a mutable copy of the video_window
+            let mut video_window = match self.video_window.try_borrow_mut() {
+                Ok(window) => window,
+                Err(_) => return, // If unable, exit immediately
+            };
+
             // Check to see if there are any more updatess
             let update = match interface_update.try_recv() {
                 Ok(update) => update,
@@ -96,23 +102,21 @@ impl GtkInterface {
             // Unpack the updates of every type
             match update {
                 // Launch the video window or load the new stream
+                InterfaceUpdate::Window { window } => {
+                    // Add the new video stream
+                    video_window.define_window(window);
+                }
+                
+                // Launch the video window or load the new stream
                 InterfaceUpdate::Video { video_stream } => {
-                    // Attempt to get a mutable copy of the video_window
-                    let mut video_window = match self.video_window.try_borrow_mut() {
-                        Ok(window) => window,
+                    // Add the new video stream
+                    video_window.add_new_video(video_stream);
+                }
 
-                        // If unable, exit immediately
-                        Err(_) => return,
-                    };
-
-                    // Switch based on if a video stream was provided
-                    if let Some(stream) = video_stream {
-                        video_window.add_new_video(stream);
-
+                // Clear all the video channels
+                InterfaceUpdate::Close => {
                     // Otherwise, destroy the video window
-                    } else {
-                        video_window.clear_all();
-                    }
+                    video_window.clear_all();
                 }
             }
         }

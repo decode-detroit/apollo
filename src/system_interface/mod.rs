@@ -94,6 +94,15 @@ impl SystemInterface {
                         }
                     }
 
+                    // If defining a new window
+                    Request::DefineWindow { window } => {
+                        // Send the window definition to the gtk interface
+                        self.interface_send.send(InterfaceUpdate::Window { window });
+
+                        // Reply success to the web interface
+                        request.reply_to.send(WebReply::success()).unwrap_or(());
+                    }
+
                     // If defining a new channel
                     Request::DefineChannel { media_channel } => {
                         // Add the channel definition
@@ -103,7 +112,7 @@ impl SystemInterface {
                                 // If a stream was created
                                 if let Some(video_stream) = possible_stream {
                                     // Pass the new video stream to the gtk interface
-                                    self.interface_send.send(InterfaceUpdate::Video { video_stream: Some(video_stream) });
+                                    self.interface_send.send(InterfaceUpdate::Video { video_stream });
                                 }
 
                                 // Reply success to the web interface
@@ -174,7 +183,7 @@ impl Drop for SystemInterface {
     ///
     fn drop(&mut self) {
         // Destroy the video windows
-        self.interface_send.send(InterfaceUpdate::Video { video_stream: None });
+        self.interface_send.send(InterfaceUpdate::Close);
     }
 }
 

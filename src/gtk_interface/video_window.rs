@@ -81,6 +81,22 @@ impl VideoWindow {
         }
     }
 
+    /// A method to define a new application window
+    /// 
+    pub fn define_window(&mut self, definition: WindowDefinition) {
+        // Copy the window number
+        let window_number = definition.window_number;
+
+        // Create the new window and pass dimensions if specified
+        let (window, overlay) = self.new_window(Some(definition));
+
+        // Save the overlay in the overlay map
+        self.overlay_map.insert(window_number, overlay);
+
+        // Show the window
+        window.show_all();
+    }
+
     /// A method to add a new video to the video window
     ///
     pub fn add_new_video(&mut self, video_stream: VideoStream) {
@@ -99,9 +115,8 @@ impl VideoWindow {
         }
         video_area.set_widget_name(&video_stream.channel.to_string());
 
-        // Extract the window number and dimensions (for use below)
+        // Extract the window number (for use below)
         let window_number = video_stream.window_number;
-        let dimensions = video_stream.dimensions;
 
         // Draw a black background
         video_area.connect_draw(|_, cr| {
@@ -194,8 +209,8 @@ impl VideoWindow {
 
         // Otherwise, create a new window
         } else {
-            // Create the new window and pass dimensions if specified
-            let (window, overlay) = self.new_window(dimensions);
+            // Create the new window
+            let (window, overlay) = self.new_window(None);
 
             // Add the video area to the overlay
             overlay.add_overlay(&video_area);
@@ -210,20 +225,19 @@ impl VideoWindow {
 
     // A helper function to create a new video window and return the window and overlay
     //
-    fn new_window(&self, dimensions: Option<(i32, i32)>) -> (gtk::Window, gtk::Overlay) {
+    fn new_window(&self, definition: Option<WindowDefinition>) -> (gtk::Window, gtk::Overlay) {
         // Create the new window
         let window = gtk::Window::new(gtk::WindowType::Toplevel);
 
         // Set window parameters
         window.set_decorated(false);
-        window.fullscreen();
         window.set_title(WINDOW_TITLE);
         window.set_icon_from_file(LOGO_SQUARE).unwrap_or(()); // give up if unsuccessful
         
         // Disable the delete button for the window
         window.set_deletable(false);
 
-        // Create black background
+        // Create black background FIXME allow other colors for the background
         let background = gtk::DrawingArea::new();
         background.connect_draw(|_, cr| {
             // Draw the background black
@@ -232,9 +246,21 @@ impl VideoWindow {
             Inhibit(true)
         });
 
-        // Set the minimum window dimensions, if specified
-        if let Some((height, width)) = dimensions {
-            background.set_size_request(height, width);
+        // If there is a definition 
+        if let Some(detail) = definition {
+            // And it is set to fullscreen, change the window setting
+            if detail.fullscreen {
+                window.fullscreen();
+            }
+
+            // Set the minimum window dimensions, if specified
+            if let Some((height, width)) = detail.dimensions {
+                background.set_size_request(height, width);
+            }
+        
+        // Otherwise, default to fullscreen
+        } else {
+            window.fullscreen();
         }
 
         // Create the overlay and add the background

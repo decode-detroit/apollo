@@ -32,6 +32,13 @@ use warp::{http, Filter};
 use serde::de::DeserializeOwned;
 
 // Define conversions from data types into a Request
+impl From<WindowDefinition> for Request {
+    fn from(window: WindowDefinition) -> Self {
+        Request::DefineWindow {
+            window,
+        }
+    }
+}
 impl From<MediaChannel> for Request {
     fn from(media_channel: MediaChannel) -> Self {
         Request::DefineChannel {
@@ -80,10 +87,18 @@ impl WebInterface {
     pub async fn run(&mut self) {
         // Create the all stop filter
         let all_stop = warp::post()
-            .and(warp::path("cueMedia"))
+            .and(warp::path("allStop"))
             .and(warp::path::end())
             .and(WebInterface::with_clone(self.web_send.clone()))
             .and(WebInterface::with_clone(Request::AllStop))
+            .and_then(WebInterface::handle_request);
+
+        // Create the define window filter
+        let define_window = warp::post()
+            .and(warp::path("defineWindow"))
+            .and(warp::path::end())
+            .and(WebInterface::with_clone(self.web_send.clone()))
+            .and(WebInterface::with_json::<WindowDefinition>())
             .and_then(WebInterface::handle_request);
 
         // Create the define channel filter
@@ -112,6 +127,7 @@ impl WebInterface {
 
         // Combine the filters
         let routes = all_stop
+            .or(define_window)
             .or(define_channel)
             .or(cue_media)
             .or(change_state);
@@ -124,7 +140,7 @@ impl WebInterface {
         }
 
         // Handle incoming requests on the media port
-        warp::serve(routes).run(address.parse::<std::net::SocketAddr>().unwrap()).await;
+        warp::serve(routes).run(address.parse::<std::net::SocketAddr>().expect("Unable to listen at specified address.")).await;
     }
 
     /// A function to handle define channel requests
