@@ -75,7 +75,7 @@ You can have as many channels as you like (currrently tested with eleven simulta
 Here are the application window options:
 * windowNumber: a unique number for the application window. Channels with the same window number will appear on the same application window and will be stacked from first-defined to last-defined on the top.
 * fullscreen: a true or false value to indicate whether the window should be set to fullscreen.
-* windowDimensions: a two element tuple that specifies the minimum size of the application window that holds the video screen. If the application window is set to fullscreen, you can use this tool to streach the application window across multiple monitors.
+* windowDimensions: a two element tuple that specifies the minimum size of the application window that holds the video screen. If the application window is set to fullscreen, you can use this tool to stretch the application window across multiple monitors.
 
 ### Media Channel Options
 
@@ -88,7 +88,7 @@ Here are the media channel options:
 * loopMedia: the media (video or audio) to loop when no other media is playing on this channel. Defaults to nothing if left blank.
 
 A video window has several parameters:
-* windowNumber: a number for the _application_ window. Channels with the same window number will appear on the same application window and will be stacked from first-defined to last-defined on the top.
+* windowNumber: a number for the *application* window. Channels with the same window number will appear on the same application window and will be stacked from first-defined to last-defined on the top.
 * top: distance (in pixels) from the top of the application window to the top of the video.
 * left: distance (in pixels) from the left side of the application window to the left side of the video.
 * height: height (in pixels) of the video screen
