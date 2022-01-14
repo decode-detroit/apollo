@@ -62,7 +62,7 @@ use tokio::runtime::Runtime;
 /// The Apollo structure to contain the program launching and overall
 /// communication code.
 ///
-struct Apollo {}
+struct Apollo;
 
 // Implement the Apollo functionality
 impl Apollo {
