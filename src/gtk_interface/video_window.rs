@@ -142,8 +142,9 @@ impl VideoWindow {
 
             // Set the window cursor to blank
             let display = gdk_window.display();
-            let cursor = Cursor::for_display(&display, gdk::CursorType::BlankCursor);
-            gdk_window.set_cursor(Some(&cursor));
+            if let Some(cursor) = Cursor::for_display(&display, gdk::CursorType::BlankCursor) {
+                gdk_window.set_cursor(Some(&cursor));
+            }
 
             // Check to make sure the window is native
             if !gdk_window.ensure_native() {
@@ -162,7 +163,7 @@ impl VideoWindow {
                     // Connect to the get_xid function
                     extern "C" {
                         pub fn gdk_x11_window_get_xid(
-                            window: *mut glib::object::GObject,
+                            window: *mut glib::object::Object,
                         ) -> *mut c_void;
                     }
 

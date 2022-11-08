@@ -1,6 +1,6 @@
 [package]
 name = "apollo"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Patton Doyle <patton@DecodeDetroit.com>"]
 description = "Realtime Remote-Controlled Multimedia Player"
 license = "GPL-3.0-or-later"
@@ -14,15 +14,15 @@ failure = "0.1"
 fnv = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-gtk = "0.14"
-gdk = "0.14"
-gio = "0.14"
-gdk-pixbuf = "0.14"
-glib = "0.14"
+gtk = "0.16"
+gdk = "0.16"
+gio = "0.16"
+gdk-pixbuf = "0.16"
+glib = "0.16"
 cairo-rs = "^0"
-gstreamer = "0.17"
+gstreamer = "0.19"
 gstreamer-video = "^0"
-tokio = { version = "1.15", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.21", features = ["macros", "rt-multi-thread"] }
 warp = "0.3"
 async-stream = "0.3"
 futures-util = "0.3"

@@ -88,24 +88,24 @@ impl MediaPlayback {
         }
 
         // Create a new playbin
-        let playbin = gst::ElementFactory::make("playbin", None)?;
+        let playbin = gst::ElementFactory::make_with_name("playbin", None)?;
 
         // Match based on the audio device specified
         match media_channel.audio_device {
             // An ALSA device
             Some(AudioDevice::Alsa { device_name }) => {
                 // Create and set the audio sink
-                let audio_sink = gst::ElementFactory::make("alsasink", None)?;
-                audio_sink.set_property("device", &device_name)?;
-                playbin.set_property("audio-sink", &audio_sink)?;
+                let audio_sink = gst::ElementFactory::make_with_name("alsasink", None)?;
+                audio_sink.set_property("device", &device_name);
+                playbin.set_property("audio-sink", &audio_sink);
             }
 
             // A Pulse Audio device
             Some(AudioDevice::Pulse { device_name }) => {
                 // Create and set the audio sink
-                let audio_sink = gst::ElementFactory::make("pulsesink", None)?;
-                audio_sink.set_property("device", &device_name)?;
-                playbin.set_property("audio-sink", &audio_sink)?;
+                let audio_sink = gst::ElementFactory::make_with_name("pulsesink", None)?;
+                audio_sink.set_property("device", &device_name);
+                playbin.set_property("audio-sink", &audio_sink);
             }
 
             // Ignore all others
@@ -116,12 +116,7 @@ impl MediaPlayback {
         let mut video_stream = None;
         if let Some(video_frame) = media_channel.video_frame {
             // Compose the allocation
-            let allocation = gtk::Rectangle {
-                x: video_frame.left,
-                y: video_frame.top,
-                width: video_frame.width,
-                height: video_frame.height,
-            };
+            let allocation = gtk::Rectangle::new(video_frame.left, video_frame.top, video_frame.width, video_frame.height);
 
             // Try to create the video overlay
             let video_overlay = match playbin.clone().dynamic_cast::<gst_video::VideoOverlay>()
@@ -148,7 +143,7 @@ impl MediaPlayback {
         // If loop media was specified
         if let Some(loop_uri) = media_channel.loop_media.clone() {
             // Set the playbin to the loop uri
-            playbin.set_property("uri", &loop_uri)?;
+            playbin.set_property("uri", &loop_uri);
 
             // Start playing the media
             playbin.set_state(gst::State::Playing)?;
@@ -177,7 +172,7 @@ impl MediaPlayback {
             channel.playbin.set_state(gst::State::Null)?;
 
             // Add the uri to this channel
-            channel.playbin.set_property("uri", &media_cue.uri)?;
+            channel.playbin.set_property("uri", &media_cue.uri);
 
             // Make sure the new media is playing
             channel.playbin.set_state(gst::State::Playing)?;
@@ -262,7 +257,7 @@ impl MediaPlayback {
                             .unwrap_or(gst::StateChangeSuccess::Success);
 
                         // If media was specified, add the loop uri to this channel
-                        channel.set_property("uri", &media).unwrap_or(());
+                        channel.set_property("uri", &media);
 
                         // Try to start playing the media
                         channel
