@@ -60,6 +60,13 @@ impl From<ChannelState> for Request {
         }
     }
 }
+impl From<ChannelAllocation> for Request {
+    fn from(channel_allocation: ChannelAllocation) -> Self {
+        Request::ResizeChannel {
+            channel_allocation,
+        }
+    }
+}
 
 /// A structure to contain the web interface and handle all updates to the
 /// to the interface.
@@ -125,12 +132,21 @@ impl WebInterface {
             .and(WebInterface::with_json::<ChannelState>())
             .and_then(WebInterface::handle_request);
 
+        // Create the channel location filter
+        let resize_channel = warp::post()
+            .and(warp::path("resizeChannel"))
+            .and(warp::path::end())
+            .and(WebInterface::with_clone(self.web_send.clone()))
+            .and(WebInterface::with_json::<ChannelAllocation>())
+            .and_then(WebInterface::handle_request);
+
         // Combine the filters
         let routes = all_stop
             .or(define_window)
             .or(define_channel)
             .or(cue_media)
-            .or(change_state);
+            .or(change_state)
+            .or(resize_channel);
 
         // Try to extract the user defined address
         let mut address = DEFAULT_ADDRESS.to_string();

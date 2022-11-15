@@ -75,7 +75,7 @@ impl GtkInterface {
             gtk_interface.check_updates(&interface_receive);
             Continue(true) // continue looking for updates indefinitely
         });
-        glib::timeout_add_local(Duration::from_millis(REFRESH_RATE), update_interface); // triggers once every 100ms
+        glib::timeout_add_local(Duration::from_millis(REFRESH_RATE), update_interface); // triggers once every 10ms
     }
 
     /// A method to listen for modifications to the gtk interface.
@@ -101,16 +101,22 @@ impl GtkInterface {
 
             // Unpack the updates of every type
             match update {
-                // Launch the video window or load the new stream
+                // Launch the video window
                 InterfaceUpdate::Window { window } => {
                     // Add the new video stream
                     video_window.define_window(window);
                 }
                 
-                // Launch the video window or load the new stream
+                // Load the new video stream
                 InterfaceUpdate::Video { video_stream } => {
                     // Add the new video stream
                     video_window.add_new_video(video_stream);
+                }
+
+                // Update the location of a video stream
+                InterfaceUpdate::Resize { video_allocation } => {
+                    // Change the location of the video stream
+                    video_window.change_allocation(video_allocation);
                 }
 
                 // Clear all the video channels

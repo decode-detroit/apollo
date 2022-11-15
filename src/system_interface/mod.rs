@@ -149,6 +149,15 @@ impl SystemInterface {
                             request.reply_to.send(WebReply::success()).unwrap_or(());
                         }
                     }
+
+                    // If changing the location of a channel
+                    Request::ResizeChannel { channel_allocation } => {
+                        // Pass the new video location to the gtk interface
+                        self.interface_send.send(InterfaceUpdate::Resize { video_allocation: channel_allocation.into() });
+
+                        // Reply success to the web interface
+                        request.reply_to.send(WebReply::success()).unwrap_or(());
+                    }
                 }
             }
         }

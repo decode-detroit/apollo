@@ -224,7 +224,35 @@ impl VideoWindow {
         }
     }
 
-    // A helper function to create a new video window and return the window and overlay
+    /// A method to change the location of a video within the window
+    ///
+    pub fn change_allocation(&mut self, video_allocation: VideoAllocation) {
+        // Try to change the video area within the channel map
+        if let Ok(mut map) = self.channel_map.try_borrow_mut() {
+            // If the current video was found
+            if let Some(allocation) = map.get_mut(&video_allocation.channel.to_string()) {
+                // Update the allocation
+                *allocation = video_allocation.allocation;
+
+            // Otherwise, warn the user
+            } else {
+                println!("Unable to get find current settings for channel {}", video_allocation.channel);
+                return
+            }
+        
+        // Fail silently
+        } else {
+            return;
+        }
+
+        // Try to get a copy of the overlay
+        if let Some(overlay) = self.overlay_map.get(&video_allocation.window_number) {
+            // Trigger a reallocation of the overlay
+            overlay.queue_resize();
+        }
+    }
+
+    // A helper method to create a new video window and return the window and overlay
     //
     fn new_window(&self, definition: Option<WindowDefinition>) -> (gtk::Window, gtk::Overlay) {
         // Create the new window
@@ -238,7 +266,7 @@ impl VideoWindow {
         // Disable the delete button for the window
         window.set_deletable(false);
 
-        // Create black background FIXME allow other colors for the background
+        // Create black background TODO allow other colors for the background
         let background = gtk::DrawingArea::new();
         background.connect_draw(|_, cr| {
             // Draw the background black

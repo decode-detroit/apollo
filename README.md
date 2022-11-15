@@ -145,6 +145,45 @@ fetch(`cueMedia`, {
 });
 ```
 
+Then, perhaps:
+```
+let channelResize = {
+    channel: 1,
+    videoFrame: {
+        windowNumber: 1,
+        top: 0,
+        left: 0,
+        height: 800,
+        width: 800,
+    },
+}
+
+fetch(`resizeChannel`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(channelResize),
+});
+```
+
+And mercifully
+```
+let channelState = {
+    channel: 1,
+    state: "paused",
+}
+
+fetch(`changeState`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(channelState),
+});
+```
+
+
 The port number will soon be made available as a command line option, but in the meantime, if you need to make Apollo available on a different port or accessible from a different computer, we recommend [Caddy](https://caddyserver.com/). Follow the instructions for setting up a reverse proxy (it will take less than 60 seconds).
 
 In the future, additional options such as pausing media, seeking through media, changing media to a different channel, etc., will be added based on our own needs. If you are using Apollo and have a specific feature you need, feel free to send us an email and we'll do our best to make it a priority.

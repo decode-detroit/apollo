@@ -113,10 +113,40 @@ pub struct WindowDefinition {
 }
 
 /// A type to communicate a video stream to the gtk interface
+///
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct VideoStream {
     pub channel: u32,               // the channel where the video should be played
     pub window_number: u32,         // the window where the video should be played
     pub allocation: gtk::Rectangle, // the location of the video in the screen
     pub video_overlay: gst_video::VideoOverlay, // the video overlay which should be connected to the video id
+}
+
+/// A struct to define a new location for a single video channel
+///
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChannelAllocation {
+    pub channel: u32, // the channel number
+    pub video_frame: VideoFrame, // the video frame
+}
+
+/// A type to communicate a new video location to the gtk interface
+/// 
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct VideoAllocation {
+    pub channel: u32,               // the channel where the video should be played
+    pub window_number: u32,         // the window where the video should be played
+    pub allocation: gtk::Rectangle, // the location of the video in the screen
+}
+
+// Define conversion from a channel location into a video location
+impl From<ChannelAllocation> for VideoAllocation {
+    fn from(channel_allocation: ChannelAllocation) -> Self {
+        Self {
+            window_number: channel_allocation.video_frame.window_number,
+            channel: channel_allocation.channel,
+            allocation:  gtk::Rectangle::new(channel_allocation.video_frame.left, channel_allocation.video_frame.top, channel_allocation.video_frame.width, channel_allocation.video_frame.height),
+        }
+    }
 }

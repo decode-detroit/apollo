@@ -92,6 +92,11 @@ pub enum Request {
     ChangeState {
         channel_state: ChannelState, 
     },
+
+    /// A variant to change location of a video channel
+    ResizeChannel {
+        channel_allocation: ChannelAllocation,
+    }
 }
 
 /// A type to cover all web replies
@@ -148,6 +153,9 @@ pub enum InterfaceUpdate {
 
     /// A variant to create a new video channel
     Video { video_stream: VideoStream },
+
+    /// A variant to change the video location
+    Resize { video_allocation: VideoAllocation },
 
     /// A variant to close all the windows
     Close,
