@@ -1,6 +1,6 @@
 [package]
 name = "apollo"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Patton Doyle <patton@DecodeDetroit.com>"]
 description = "Realtime Remote-Controlled Multimedia Player"
 license = "GPL-3.0-or-later"

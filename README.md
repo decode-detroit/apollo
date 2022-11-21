@@ -5,7 +5,9 @@ This media player is designed for realtime playback of audio and video in theatr
 
 ## Getting Started
 
-Binary releases (for GNU/Linux systems) coming soon. Not tested on Windows or Mac, but it should compile.
+If you're on a 64-bit GNU/Linux system, you can use the the [binary release here](https://github.com/decode-detroit/apollo/releases).
+
+Binary releases for other systems are a work in progress.
 
 In the meantime, you'll need a few things to compile and run Apollo:
 
@@ -87,7 +89,7 @@ Here are the media channel options:
 * audioDevice: the audio device for playing any sound. Defaults to the system default.
 * loopMedia: the media (video or audio) to loop when no other media is playing on this channel. Defaults to nothing if left blank.
 
-A video window has several parameters:
+A video frame has several parameters:
 * windowNumber: a number for the *application* window. Channels with the same window number will appear on the same application window and will be stacked from first-defined to last-defined on the top.
 * top: distance (in pixels) from the top of the application window to the top of the video.
 * left: distance (in pixels) from the left side of the application window to the left side of the video.
@@ -118,7 +120,7 @@ let mediaChannel = {
         windowNumber: 1,
         top: 100,
         left: 100,
-        height: 400,
+        height: 300,
         width: 400,
     },
 }
@@ -153,7 +155,7 @@ let channelResize = {
         windowNumber: 1,
         top: 0,
         left: 0,
-        height: 800,
+        height: 600,
         width: 800,
     },
 }

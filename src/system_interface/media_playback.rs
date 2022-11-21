@@ -118,11 +118,38 @@ impl MediaPlayback {
             // Compose the allocation
             let allocation = gtk::Rectangle::new(video_frame.left, video_frame.top, video_frame.width, video_frame.height);
 
-            // Try to create the video overlay
-            let video_overlay = match playbin.clone().dynamic_cast::<gst_video::VideoOverlay>()
-            {
-                Ok(overlay) => overlay,
-                _ => return Err(format_err!("Unable to create video stream.")),
+            // Try to create an OpenGL sink
+            let video_element = if let Ok(gl_sink) = gst::ElementFactory::make("gtkglsink").build() {
+                // Try to create a bin based on the new sink 
+                let gl_bin = match gst::ElementFactory::make("glsinkbin").property("sink", &gl_sink).build() {
+                    Ok(bin) => bin,
+
+                    // Otherwise, return an error
+                    _ => return Err(format_err!("Unable to create video stream.")),
+                };
+                
+                // Connect the bin to the existing playbin
+                playbin.set_property("video-sink", &gl_bin);
+
+                // Return the sink
+                gl_sink
+
+            // If we're unable to create the OpenGL sink, try a regular gtk sink
+            } else {
+                // Try to create the gtk sink
+                match gst::ElementFactory::make("gtksink").build() {
+                    Ok(gtk_sink) =>  {
+
+                        // Connect it to the existing playbin
+                        playbin.set_property("video-sink", &gtk_sink);
+    
+                        // Return the sink
+                        gtk_sink
+                    }
+
+                    // Otherwise, warn that neither approach worked
+                    _ => return Err(format_err!("Unable to create video stream.")),
+                }
             };
 
             // Send the new video stream to the user interface
@@ -130,7 +157,7 @@ impl MediaPlayback {
                 window_number: video_frame.window_number,
                 channel: media_channel.channel,
                 allocation,
-                video_overlay,
+                video_element,
             });
         } // Otherwise, any window creation (if needed) is left to gstreamer
 

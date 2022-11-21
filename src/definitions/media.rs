@@ -18,7 +18,7 @@
 //! This module implements structures to communicate various media parameters.
 
 // Import Gstreamer Library
-use gstreamer_video as gst_video;
+use gstreamer as gst;
 
 /// A struct to define a single media track to play
 ///
@@ -116,10 +116,10 @@ pub struct WindowDefinition {
 ///
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct VideoStream {
-    pub channel: u32,               // the channel where the video should be played
-    pub window_number: u32,         // the window where the video should be played
-    pub allocation: gtk::Rectangle, // the location of the video in the screen
-    pub video_overlay: gst_video::VideoOverlay, // the video overlay which should be connected to the video id
+    pub channel: u32,                // the channel where the video should be played
+    pub window_number: u32,          // the window where the video should be played
+    pub allocation: gtk::Rectangle,  // the location of the video in the screen
+    pub video_element: gst::Element, // the video element which returns a widget that can be placed in the correct location
 }
 
 /// A struct to define a new location for a single video channel

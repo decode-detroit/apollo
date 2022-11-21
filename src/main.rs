@@ -110,9 +110,6 @@ impl Apollo {
 
         // Disable the delete button for the window
         window.set_deletable(false);
-
-        // Show the window
-        //window.show();
     }
 }
 
