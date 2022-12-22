@@ -81,6 +81,15 @@ impl SystemInterface {
             Some(request) = self.web_receive.recv() => {
                 // Match the request subtype
                 match request.request {
+                    // If realigning the channel
+                    Request::AlignChannel { channel_realignment } => {
+                        // Pass the new video location to the gtk interface
+                        self.interface_send.send(InterfaceUpdate::Align { channel_realignment });
+
+                        // Reply success to the web interface
+                        request.reply_to.send(WebReply::success()).unwrap_or(());
+                    }
+
                     // If stopping all the media
                     Request::AllStop => {
                         // Try to cue the new media
@@ -150,10 +159,10 @@ impl SystemInterface {
                         }
                     }
 
-                    // If changing the location of a channel
+                    // If resizing a channel
                     Request::ResizeChannel { channel_allocation } => {
                         // Pass the new video location to the gtk interface
-                        self.interface_send.send(InterfaceUpdate::Resize { video_allocation: channel_allocation.into() });
+                        self.interface_send.send(InterfaceUpdate::Resize { channel_allocation });
 
                         // Reply success to the web interface
                         request.reply_to.send(WebReply::success()).unwrap_or(());

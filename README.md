@@ -114,6 +114,24 @@ Here are the cue media options:
 You can define media channels and cue media using the two available POST commands on localhost port 27655 (A-P-O-L-L). An example interaction might look like this:
 
 ```
+curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "videoFrame": { "windowNumber": 1, "top": 100, "left": 100, "height": 300, "width": 400}}' http://localhost:27655/defineChannel
+curl -H "Content-Type: application/json" -X POST -d '{ "uri": "https://archive.org/download/never-gonna-give-you-up-4-k/Never%20Gonna%20Give%20You%20Up%204K.ia.mp4", "channel": 1}' http://localhost:27655/cueMedia
+```
+
+Then, perhaps:
+```
+curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "videoFrame": { "top": 0, "left": 0, "height": 600, "width": 800}}' http://localhost:27655/resizeChannel
+curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "direction": "up"}' http://localhost:27655/alignChannel
+```
+
+And mercifully
+```
+curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "state": "paused"}' http://localhost:27655/changeState
+```
+
+Or the same interaction using Javascript:
+
+```
 let mediaChannel = {
     channel: 1,
     videoFrame: {
@@ -146,13 +164,10 @@ fetch(`cueMedia`, {
     body: JSON.stringify(mediaCue),
 });
 ```
-
-Then, perhaps:
 ```
 let channelResize = {
     channel: 1,
     videoFrame: {
-        windowNumber: 1,
         top: 0,
         left: 0,
         height: 600,
@@ -167,9 +182,20 @@ fetch(`resizeChannel`, {
     },
     body: JSON.stringify(channelResize),
 });
-```
 
-And mercifully
+let channelAlign = {
+    channel: 1,
+    direction: "up",
+}
+
+fetch(`alignChannel`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(channelAlign),
+});
+```
 ```
 let channelState = {
     channel: 1,
@@ -184,7 +210,6 @@ fetch(`changeState`, {
     body: JSON.stringify(channelState),
 });
 ```
-
 
 The port number will soon be made available as a command line option, but in the meantime, if you need to make Apollo available on a different port or accessible from a different computer, we recommend [Caddy](https://caddyserver.com/). Follow the instructions for setting up a reverse proxy (it will take less than 60 seconds).
 

@@ -40,8 +40,9 @@ use fnv::FnvHashMap;
 /// A structure to contain the window for displaying video streams.
 ///
 pub struct VideoWindow {
-    overlay_map: FnvHashMap<u32, gtk::Overlay>, // the overlay widget
+    overlay_map: FnvHashMap<u32, gtk::Overlay>, // the mapping of the overlay widgets
     channel_map: Rc<RefCell<FnvHashMap<std::string::String, gtk::Rectangle>>>, // the mapping of channel numbers to allocations
+    window_map: FnvHashMap<u32, u32>, // the mapping of channel numbers to windows
 }
 
 // Implement key features for the video window
@@ -49,8 +50,9 @@ impl VideoWindow {
     /// A function to create a new prompt string dialog structure.
     ///
     pub fn new() -> VideoWindow {
-        // Create the overlay map
+        // Create the overlay map and window map
         let overlay_map = FnvHashMap::default();
+        let window_map = FnvHashMap::default();
 
         // Create the channel map
         let channel_map: Rc<RefCell<FnvHashMap<std::string::String, gtk::Rectangle>>> =
@@ -60,6 +62,7 @@ impl VideoWindow {
         VideoWindow {
             overlay_map,
             channel_map,
+            window_map,
         }
     }
 
@@ -79,6 +82,9 @@ impl VideoWindow {
         if let Ok(mut map) = self.channel_map.try_borrow_mut() {
             map.clear();
         }
+
+        // Empty the window map
+        self.window_map = FnvHashMap::default();
     }
 
     /// A method to define a new application window
@@ -117,6 +123,9 @@ impl VideoWindow {
 
         // Extract the window number (for use below)
         let window_number = video_stream.window_number;
+
+        // Save the channel -> window mapping to the map
+        self.window_map.insert(video_stream.channel, video_stream.window_number);
 
         // Draw a black background
         video_area.connect_draw(|_, cr| {
@@ -224,19 +233,19 @@ impl VideoWindow {
         }
     }
 
-    /// A method to change the location of a video within the window
+    /// A method to resize  a video within the window
     ///
-    pub fn change_allocation(&mut self, video_allocation: VideoAllocation) {
+    pub fn change_allocation(&mut self, channel_allocation: ChannelAllocation) {
         // Try to change the video area within the channel map
         if let Ok(mut map) = self.channel_map.try_borrow_mut() {
             // If the current video was found
-            if let Some(allocation) = map.get_mut(&video_allocation.channel.to_string()) {
+            if let Some(allocation) = map.get_mut(&channel_allocation.channel.to_string()) {
                 // Update the allocation
-                *allocation = video_allocation.allocation;
+                *allocation = gtk::Rectangle::new(channel_allocation.video_frame.left, channel_allocation.video_frame.top, channel_allocation.video_frame.width, channel_allocation.video_frame.height);
 
             // Otherwise, warn the user
             } else {
-                println!("Unable to get find current settings for channel {}", video_allocation.channel);
+                println!("Unable to get find current settings for channel {}", channel_allocation.channel);
                 return
             }
         
@@ -245,10 +254,50 @@ impl VideoWindow {
             return;
         }
 
-        // Try to get a copy of the overlay
-        if let Some(overlay) = self.overlay_map.get(&video_allocation.window_number) {
-            // Trigger a reallocation of the overlay
-            overlay.queue_resize();
+        // Try to locate the correct window number
+        if let Some(window_number) = self.window_map.get(&channel_allocation.channel) {
+            // Try to get a copy of the overlay
+            if let Some(overlay) = self.overlay_map.get(window_number) {
+                // Trigger a reallocation of the overlay
+                overlay.queue_resize();
+            }
+        }
+    }
+
+    /// A method to change the alignment a video within the window
+    ///
+    pub fn change_alignment(&mut self, channel_realignment: ChannelRealignment) {
+        // Try to change the video area within the channel map
+        if let Ok(mut map) = self.channel_map.try_borrow_mut() {
+            // If the current video was found
+            if let Some(allocation) = map.get_mut(&channel_realignment.channel.to_string()) {
+                // Switch based on the direction
+                match channel_realignment.direction {
+                    // Adjust the direction accordingly
+                    Direction::Up => *allocation = gtk::Rectangle::new(allocation.x(), allocation.y() - 1, allocation.width(), allocation.height()),
+                    Direction::Down => *allocation = gtk::Rectangle::new(allocation.x(), allocation.y() + 1, allocation.width(), allocation.height()),
+                    Direction::Left => *allocation = gtk::Rectangle::new(allocation.x() - 1, allocation.y(), allocation.width(), allocation.height()),
+                    Direction::Right => *allocation = gtk::Rectangle::new(allocation.x() + 1, allocation.y(), allocation.width(), allocation.height()),
+                }
+
+            // Otherwise, warn the user
+            } else {
+                println!("Unable to get find current settings for channel {}", channel_realignment.channel);
+                return
+            }
+        
+        // Fail silently
+        } else {
+            return;
+        }
+
+        // Try to locate the correct window number
+        if let Some(window_number) = self.window_map.get(&channel_realignment.channel) {
+            // Try to get a copy of the overlay
+            if let Some(overlay) = self.overlay_map.get(window_number) {
+                // Trigger a reallocation of the overlay
+                overlay.queue_resize();
+            }
         }
     }
 

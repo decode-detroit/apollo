@@ -113,10 +113,16 @@ impl GtkInterface {
                     video_window.add_new_video(video_stream);
                 }
 
-                // Update the location of a video stream
-                InterfaceUpdate::Resize { video_allocation } => {
+                // Resize a video stream
+                InterfaceUpdate::Resize { channel_allocation } => {
                     // Change the location of the video stream
-                    video_window.change_allocation(video_allocation);
+                    video_window.change_allocation(channel_allocation);
+                }
+
+                // Realign a video stream
+                InterfaceUpdate::Align { channel_realignment } => {
+                    // Change the location of the video stream
+                    video_window.change_alignment(channel_realignment);
                 }
 
                 // Clear all the video channels

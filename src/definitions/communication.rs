@@ -70,6 +70,12 @@ pub struct WebRequest {
 ///
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Request {
+    /// A variant to change location of a video frame by one pixel in one direction.
+    /// The size of the video frame remains the constant.
+    AlignChannel {
+        channel_realignment: ChannelRealignment,
+    },
+
     /// A variant to stop all playing media
     AllStop,
 
@@ -93,10 +99,10 @@ pub enum Request {
         channel_state: ChannelState, 
     },
 
-    /// A variant to change location of a video channel
+    /// A variant to change location and/or size of a video frame
     ResizeChannel {
         channel_allocation: ChannelAllocation,
-    }
+    },
 }
 
 /// A type to cover all web replies
@@ -154,8 +160,11 @@ pub enum InterfaceUpdate {
     /// A variant to create a new video channel
     Video { video_stream: VideoStream },
 
-    /// A variant to change the video location
-    Resize { video_allocation: VideoAllocation },
+    /// A variant to resize the video frame
+    Resize { channel_allocation: ChannelAllocation },
+
+    /// A variant to realign the video frame
+    Align { channel_realignment: ChannelRealignment },
 
     /// A variant to close all the windows
     Close,

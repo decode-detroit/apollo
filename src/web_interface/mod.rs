@@ -67,6 +67,13 @@ impl From<ChannelAllocation> for Request {
         }
     }
 }
+impl From<ChannelRealignment> for Request {
+    fn from(channel_realignment: ChannelRealignment) -> Self {
+        Request::AlignChannel {
+            channel_realignment,
+        }
+    }
+}
 
 /// A structure to contain the web interface and handle all updates to the
 /// to the interface.
@@ -92,6 +99,14 @@ impl WebInterface {
     /// A method to listen for connections from the internet
     ///
     pub async fn run(&mut self) {
+        // Create the align channel filter
+        let align_channel = warp::post()
+            .and(warp::path("alignChannel"))
+            .and(warp::path::end())
+            .and(WebInterface::with_clone(self.web_send.clone()))
+            .and(WebInterface::with_json::<ChannelRealignment>())
+            .and_then(WebInterface::handle_request);
+
         // Create the all stop filter
         let all_stop = warp::post()
             .and(warp::path("allStop"))
@@ -132,7 +147,7 @@ impl WebInterface {
             .and(WebInterface::with_json::<ChannelState>())
             .and_then(WebInterface::handle_request);
 
-        // Create the channel location filter
+        // Create the resize channel filter
         let resize_channel = warp::post()
             .and(warp::path("resizeChannel"))
             .and(warp::path::end())
@@ -146,7 +161,8 @@ impl WebInterface {
             .or(define_channel)
             .or(cue_media)
             .or(change_state)
-            .or(resize_channel);
+            .or(resize_channel)
+            .or(align_channel);
 
         // Try to extract the user defined address
         let mut address = DEFAULT_ADDRESS.to_string();
