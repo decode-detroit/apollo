@@ -211,7 +211,7 @@ fetch(`changeState`, {
 });
 ```
 
-The port number (and listening location) can be adjusted with the '-a' or '--address' commandline option. If you need to make Apollo available on a different port or accessible from a different computer, we recommend [Caddy](https://caddyserver.com/). Follow the instructions for setting up a reverse proxy (it will take less than 60 seconds).
+The port number (and listening location) can be adjusted with the '-a' or '--address' commandline option. If you need to make Apollo available to the open internet, we recommend [Caddy](https://caddyserver.com/). Follow the instructions for setting up a reverse proxy (it will take less than 60 seconds).
 
 In the future, additional options such as pausing media, seeking through media, changing media to a different channel, etc., will be added based on our own needs. If you are using Apollo and have a specific feature you need, feel free to send us an email and we'll do our best to make it a priority.
 
