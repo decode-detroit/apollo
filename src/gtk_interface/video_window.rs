@@ -149,12 +149,6 @@ impl VideoWindow {
                 }
             };
 
-            // Set the window cursor to blank
-            let display = gdk_window.display();
-            if let Some(cursor) = Cursor::for_display(&display, gdk::CursorType::BlankCursor) {
-                gdk_window.set_cursor(Some(&cursor));
-            }
-
             // Check to make sure the window is native
             if !gdk_window.ensure_native() {
                 println!("Widget is not located inside a native window.");
@@ -314,6 +308,30 @@ impl VideoWindow {
         
         // Disable the delete button for the window
         window.set_deletable(false);
+
+        // Connect the realize signal for the video area
+        window.connect_realize(move |window| {
+            // Try to get a copy of the GDk window
+            let gdk_window = match window.window() {
+                Some(new_window) => new_window,
+                None => {
+                    println!("Unable to get current window for video overlay.");
+                    return;
+                }
+            };
+
+            // Set the window cursor to blank
+            let display = gdk_window.display();
+            if let Some(cursor) = Cursor::for_display(&display, gdk::CursorType::BlankCursor) {
+                gdk_window.set_cursor(Some(&cursor));
+            }
+
+            // Check to make sure the window is native
+            if !gdk_window.ensure_native() {
+                println!("Widget is not located inside a native window.");
+                return;
+            }
+        });
 
         // Create black background TODO allow other colors for the background
         let background = gtk::DrawingArea::new();
