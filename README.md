@@ -262,7 +262,7 @@ env PKG_CONFIG_ALLOW_CROSS=1 PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgcon
 
 #### Prepare Your Raspberry Pi
 
-In addition to the packages above (e.g. GStreamer), you need to set the graphics memory to 512MB to allow for reliable playback of videos. Use the preferences program or raspi-config to change the settings.
+All that is needed is installing the packages above (i.e. GStreamer).
 
 Hardware decoding works well for videos up to 1080p at 30 fps. There is a short delay when switching between playing videos, but there is no delay when playing a new video after the first has stopped.
 
