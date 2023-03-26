@@ -103,6 +103,11 @@ pub enum Request {
     ResizeChannel {
         channel_allocation: ChannelAllocation,
     },
+
+    /// A variant to seek within the media of a channel
+    Seek {
+        channel_seek: ChannelSeek, 
+    },
 }
 
 /// A type to cover all web replies

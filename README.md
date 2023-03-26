@@ -121,7 +121,8 @@ curl -H "Content-Type: application/json" -X POST -d '{ "uri": "https://archive.o
 Then, perhaps:
 ```
 curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "videoFrame": { "top": 0, "left": 0, "height": 600, "width": 800}}' http://localhost:27655/resizeChannel
-curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "direction": "up"}' http://localhost:27655/alignChannel
+curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "direction": "down"}' http://localhost:27655/alignChannel
+curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "position": 2000}' http://localhost:27655/seek
 ```
 
 And mercifully
@@ -213,7 +214,7 @@ fetch(`changeState`, {
 
 The port number (and listening location) can be adjusted with the '-a' or '--address' commandline option. If you need to make Apollo available to the open internet, we recommend [Caddy](https://caddyserver.com/). Follow the instructions for setting up a reverse proxy (it will take less than 60 seconds).
 
-In the future, additional options such as pausing media, seeking through media, changing media to a different channel, etc., will be added based on our own needs. If you are using Apollo and have a specific feature you need, feel free to send us an email and we'll do our best to make it a priority.
+In the future, additional options such as changing media to a different channel, swapping channel position, etc., will be added based on our own needs. If you are using Apollo and have a specific feature you need, feel free to send us an email and we'll do our best to make it a priority.
 
 ## Raspberry Pi-like Systems (ARM)
 

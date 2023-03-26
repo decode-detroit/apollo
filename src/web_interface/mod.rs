@@ -74,6 +74,13 @@ impl From<ChannelRealignment> for Request {
         }
     }
 }
+impl From<ChannelSeek> for Request {
+    fn from(channel_seek: ChannelSeek) -> Self {
+        Request::Seek {
+            channel_seek,
+        }
+    }
+}
 
 /// A structure to contain the web interface and handle all updates to the
 /// to the interface.
@@ -155,14 +162,23 @@ impl WebInterface {
             .and(WebInterface::with_json::<ChannelAllocation>())
             .and_then(WebInterface::handle_request);
 
+        // Create the seek filter
+        let seek = warp::post()
+            .and(warp::path("seek"))
+            .and(warp::path::end())
+            .and(WebInterface::with_clone(self.web_send.clone()))
+            .and(WebInterface::with_json::<ChannelSeek>())
+            .and_then(WebInterface::handle_request);
+
         // Combine the filters
         let routes = all_stop
+            .or(align_channel)
             .or(define_window)
             .or(define_channel)
             .or(cue_media)
             .or(change_state)
             .or(resize_channel)
-            .or(align_channel);
+            .or(seek);
 
         // Try to extract the user defined address
         let mut address = DEFAULT_ADDRESS.to_string();

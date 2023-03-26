@@ -167,6 +167,19 @@ impl SystemInterface {
                         // Reply success to the web interface
                         request.reply_to.send(WebReply::success()).unwrap_or(());
                     }
+
+                    // If seeking media on a channel
+                    Request::Seek { channel_seek } => {
+                        // Try to cue the new media
+                        if let Err(error) = self.media_playback.seek(channel_seek) {
+                            // If there was an error, reply with the error
+                            request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(());
+                        
+                        // Otherwise, indicate success
+                        } else {
+                            request.reply_to.send(WebReply::success()).unwrap_or(());
+                        }
+                    }
                 }
             }
         }

@@ -216,7 +216,38 @@ impl MediaPlayback {
 
         // Otherwise, throw an error
         } else {
-            return Err(format_err!("Unable to cue media: Channel not defined."));
+            return Err(format_err!("Unable to change state: Channel not defined."));
+        }
+
+        // Indicate success
+        Ok(())
+    }
+
+    /// A function to seek within the media on an existing channel
+    /// 
+    pub fn seek(&self, channel_seek: ChannelSeek) -> Result<(), Error> {
+        // Make sure there is an existing channel
+        if let Some(channel) = self.channels.get(&channel_seek.channel) {
+            // Check the length of the current media on the channel
+            if let Some(duration) = channel.playbin.query_duration::<gst::ClockTime>() {
+                // If there is enough time in the media, seek to that point
+                if duration.mseconds() > channel_seek.position {
+                    channel.playbin.seek_simple(gst::SeekFlags::FLUSH, gst::ClockTime::from_mseconds(channel_seek.position))?;
+                
+                // Otherwise, seek to the end
+                } else {
+                    // Seek to the end
+                    channel.playbin.seek_simple(gst::SeekFlags::FLUSH, gst::ClockTime::from_seconds(duration.seconds() - 1))?;
+                }
+            
+            // If nothing is playing, return an error
+            } else {
+                return Err(format_err!("Unable to seek media: No media playing."));
+            }
+
+        // Otherwise, throw an error
+        } else {
+            return Err(format_err!("Unable to seek media: Channel not defined."));
         }
 
         // Indicate success

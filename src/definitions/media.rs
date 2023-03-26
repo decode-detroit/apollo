@@ -113,6 +113,15 @@ pub struct ChannelState {
     pub state: PlaybackState,       // the new playback state
 }
 
+/// A struct to define changes to seek position of a channel
+///
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChannelSeek {
+    pub channel: u32,               // the channel of the video or audio
+    pub position: u64,              // the new seek position in milliseconds
+}
+
 /// A struct to define an application window to hold one or more media channels
 ///
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
