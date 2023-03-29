@@ -7,9 +7,7 @@ This media player is designed for realtime playback of audio and video in theatr
 
 If you're on a 64-bit GNU/Linux system, you can use the the [binary release here](https://github.com/decode-detroit/apollo/releases). *Note:* The Wayland display server is not yet supported. Try the Wayland branch at your own risk.
 
-Binary releases for other systems are a work in progress.
-
-In the meantime, you'll need a few things to compile and run Apollo:
+Binary releases for other systems are a work in progress. In the meantime, you'll need a few things to compile and run Apollo:
 
 ### Prerequisites
 
@@ -128,88 +126,6 @@ curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "position":
 And mercifully
 ```
 curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "state": "paused"}' http://localhost:27655/changeState
-```
-
-Or the same interaction using Javascript:
-
-```
-let mediaChannel = {
-    channel: 1,
-    videoFrame: {
-        windowNumber: 1,
-        top: 100,
-        left: 100,
-        height: 300,
-        width: 400,
-    },
-}
-
-fetch(`defineChannel`, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(mediaChannel),
-});
-
-let mediaCue = {
-    uri: "https://archive.org/download/never-gonna-give-you-up-4-k/Never%20Gonna%20Give%20You%20Up%204K.ia.mp4",
-    channel: 1,
-}
-
-fetch(`cueMedia`, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(mediaCue),
-});
-```
-```
-let channelResize = {
-    channel: 1,
-    videoFrame: {
-        top: 0,
-        left: 0,
-        height: 600,
-        width: 800,
-    },
-}
-
-fetch(`resizeChannel`, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(channelResize),
-});
-
-let channelAlign = {
-    channel: 1,
-    direction: "up",
-}
-
-fetch(`alignChannel`, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(channelAlign),
-});
-```
-```
-let channelState = {
-    channel: 1,
-    state: "paused",
-}
-
-fetch(`changeState`, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(channelState),
-});
 ```
 
 The port number (and listening location) can be adjusted with the '-a' or '--address' commandline option. If you need to make Apollo available to the open internet, we recommend [Caddy](https://caddyserver.com/). Follow the instructions for setting up a reverse proxy (it will take less than 60 seconds).
