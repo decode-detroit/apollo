@@ -179,7 +179,7 @@ env PKG_CONFIG_ALLOW_CROSS=1 PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgcon
 
 #### Prepare Your Raspberry Pi
 
-All that is needed is installing the packages above (i.e. GStreamer).
+All that is needed is installing the packages above (i.e. GStreamer). If you're displaying video, you probably want to disable screen blanking in the Raspberry Pi Config settings.
 
 Hardware decoding works well for videos up to 1080p at 30 fps. There is a short delay when switching between playing videos, but there is no delay when playing a new video after the first has stopped.
 
