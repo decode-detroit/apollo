@@ -236,8 +236,8 @@ impl MediaPlayback {
                 
                 // Otherwise, seek to the end
                 } else {
-                    // Seek to the end
-                    channel.playbin.seek_simple(gst::SeekFlags::FLUSH, gst::ClockTime::from_seconds(duration.seconds() - 1))?;
+                    // Seek to the end and pause
+                    channel.playbin.seek_simple(gst::SeekFlags::FLUSH, gst::ClockTime::from_mseconds(duration.mseconds() - 300))?;
                 }
             
             // If nothing is playing, return an error
