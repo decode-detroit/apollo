@@ -34,37 +34,27 @@ use serde::de::DeserializeOwned;
 // Define conversions from data types into a Request
 impl From<WindowDefinition> for Request {
     fn from(window: WindowDefinition) -> Self {
-        Request::DefineWindow {
-            window,
-        }
+        Request::DefineWindow { window }
     }
 }
 impl From<MediaChannel> for Request {
     fn from(media_channel: MediaChannel) -> Self {
-        Request::DefineChannel {
-            media_channel,
-        }
+        Request::DefineChannel { media_channel }
     }
 }
 impl From<MediaCue> for Request {
     fn from(media_cue: MediaCue) -> Self {
-        Request::CueMedia {
-            media_cue,
-        }
+        Request::CueMedia { media_cue }
     }
 }
 impl From<ChannelState> for Request {
     fn from(channel_state: ChannelState) -> Self {
-        Request::ChangeState {
-            channel_state,
-        }
+        Request::ChangeState { channel_state }
     }
 }
 impl From<ChannelAllocation> for Request {
     fn from(channel_allocation: ChannelAllocation) -> Self {
-        Request::ResizeChannel {
-            channel_allocation,
-        }
+        Request::ResizeChannel { channel_allocation }
     }
 }
 impl From<ChannelRealignment> for Request {
@@ -76,9 +66,7 @@ impl From<ChannelRealignment> for Request {
 }
 impl From<ChannelSeek> for Request {
     fn from(channel_seek: ChannelSeek) -> Self {
-        Request::Seek {
-            channel_seek,
-        }
+        Request::Seek { channel_seek }
     }
 }
 
@@ -86,8 +74,8 @@ impl From<ChannelSeek> for Request {
 /// to the interface.
 ///
 pub struct WebInterface {
-    web_send: WebSend,                  // send line to the system interface
-    user_address: Arc<Mutex<String>>,   // user-defined address
+    web_send: WebSend,                // send line to the system interface
+    user_address: Arc<Mutex<String>>, // user-defined address
 }
 
 // Implement key Web Interface functionality
@@ -197,11 +185,17 @@ impl WebInterface {
         }
 
         // Handle incoming requests on the media port
-        warp::serve(routes).run(address.parse::<std::net::SocketAddr>().expect("Unable to listen at specified address.")).await;
+        warp::serve(routes)
+            .run(
+                address
+                    .parse::<std::net::SocketAddr>()
+                    .expect("Unable to listen at specified address."),
+            )
+            .await;
     }
 
     /// A function to handle define channel requests
-    /// 
+    ///
     async fn handle_request<R>(
         web_send: WebSend,
         request: R,
@@ -241,7 +235,9 @@ impl WebInterface {
 
     // A function to extract a helper type from the body of the message
     fn with_json<T>() -> impl Filter<Extract = (T,), Error = warp::Rejection> + Clone
-    where T: Send + DeserializeOwned {
+    where
+        T: Send + DeserializeOwned,
+    {
         // When accepting a body, we want a JSON body (reject large payloads)
         warp::body::content_length_limit(1024 * 16).and(warp::body::json())
     }
@@ -250,7 +246,9 @@ impl WebInterface {
     fn with_clone<T>(
         item: T,
     ) -> impl Filter<Extract = (T,), Error = std::convert::Infallible> + Clone
-    where T: Send + Clone {
+    where
+        T: Send + Clone,
+    {
         warp::any().map(move || item.clone())
     }
 }

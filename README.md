@@ -129,7 +129,9 @@ curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "state": "p
 curl -H "Content-Type: application/json" -X POST http://localhost:27655/quit
 ```
 
-The port number (and listening location) can be adjusted with the '-a' or '--address' commandline option. If you need to make Apollo available to the open internet, we recommend [Caddy](https://caddyserver.com/). Follow the instructions for setting up a reverse proxy (it will take less than 60 seconds).
+The port number (and listening location) can be adjusted with the '-a' or '--address' commandline option, and log level can be set via the '-l' or '--logLevel' option. Log levels are Trace, Info, Debug, Warn, Error (listed in decreasing level of verbosity).
+
+If you need to make Apollo available to the open internet, we recommend [Caddy](https://caddyserver.com/). Follow the instructions for setting up a reverse proxy (it will take less than 60 seconds).
 
 In the future, additional options such as changing media to a different channel, swapping channel position, etc., will be added based on our own needs. If you are using Apollo and have a specific feature you need, feel free to send us an email and we'll do our best to make it a priority.
 

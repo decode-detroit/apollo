@@ -31,30 +31,26 @@ use media_playback::MediaPlayback;
 // Import Tokio features
 use tokio::sync::mpsc;
 
-// Import the failure features
-use failure::Error as FailureError;
+// Import tracing features
+use tracing::error;
+
+// Import anyhow features
+use anyhow::Result;
 
 /// A structure to contain the system interface and handle all updates to the
 /// to the interface.
 ///
-/// # Note
-///
-/// This structure is still under rapid development and may change operation
-/// in the near future.
-///
 pub struct SystemInterface {
-    interface_send: InterfaceSend,  // a sending line to pass interface updates
+    interface_send: InterfaceSend, // a sending line to pass interface updates
     web_receive: mpsc::Receiver<WebRequest>, // the receiving line for web requests
-    media_playback: MediaPlayback,  // the structure for controlling media playback
+    media_playback: MediaPlayback, // the structure for controlling media playback
 }
 
 // Implement key SystemInterface functionality
 impl SystemInterface {
     /// A function to create a new, blank instance of the system interface.
     ///
-    pub async fn new(
-        interface_send: InterfaceSend,
-    ) -> Result<(Self, WebSend), FailureError> {
+    pub async fn new(interface_send: InterfaceSend) -> Result<(Self, WebSend)> {
         // Create the web send for the web interface
         let (web_send, web_receive) = WebSend::new();
 
@@ -94,9 +90,10 @@ impl SystemInterface {
                     Request::AllStop => {
                         // Try to cue the new media
                         if let Err(error) = self.media_playback.all_stop() {
-                            // If there was an error, reply with the error
+                            // If there was an error, trace the error and reply with the error
+                            error!("{}", error);
                             request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(());
-                        
+
                         // Otherwise, indicate success
                         } else {
                             request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -128,8 +125,12 @@ impl SystemInterface {
                                 request.reply_to.send(WebReply::success()).unwrap_or(());
                             }
 
-                            // If there was an error, reply with the error
-                            Err(error) => request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(()),
+                            // If there was an error, trace the error and reply with the error
+                            Err(error) => {
+                                error!("{}", error);
+                                request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(());
+                            }
+
                         }
                     }
 
@@ -137,9 +138,10 @@ impl SystemInterface {
                     Request::CueMedia { media_cue } => {
                         // Try to cue the new media
                         if let Err(error) = self.media_playback.cue_media(media_cue) {
-                            // If there was an error, reply with the error
+                            // If there was an error, trace the error and reply with the error
+                            error!("{}", error);
                             request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(());
-                        
+
                         // Otherwise, indicate success
                         } else {
                             request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -150,9 +152,10 @@ impl SystemInterface {
                     Request::ChangeState { channel_state } => {
                         // Try to cue the new media
                         if let Err(error) = self.media_playback.change_state(channel_state) {
-                            // If there was an error, reply with the error
+                            // If there was an error, trace the error and reply with the error
+                            error!("{}", error);
                             request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(());
-                        
+
                         // Otherwise, indicate success
                         } else {
                             request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -172,9 +175,10 @@ impl SystemInterface {
                     Request::Seek { channel_seek } => {
                         // Try to cue the new media
                         if let Err(error) = self.media_playback.seek(channel_seek) {
-                            // If there was an error, reply with the error
+                            // If there was an error, trace the error and reply with the error
+                            error!("{}", error);
                             request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(());
-                        
+
                         // Otherwise, indicate success
                         } else {
                             request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -221,19 +225,5 @@ impl Drop for SystemInterface {
     fn drop(&mut self) {
         // Destroy the video windows
         self.interface_send.send(InterfaceUpdate::Quit);
-    }
-}
-
-
-// Tests of the system_interface module
-#[cfg(test)]
-mod tests {
-    //use super::*;
-
-    // FIXME Define tests of this module
-    #[test]
-    fn missing_tests() {
-        // FIXME: Implement this
-        unimplemented!();
     }
 }

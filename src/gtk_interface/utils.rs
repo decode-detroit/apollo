@@ -18,7 +18,6 @@
 //! A module to create a macro and several functions that simplify the steps of
 //! creating and updating the user interface.
 
-
 /// A macro to make moving clones into closures more convenient
 ///
 /// This macro allows the user to easily and quickly clone any items in a
@@ -41,4 +40,3 @@ macro_rules! clone {
         }
     );
 }
-

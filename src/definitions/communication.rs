@@ -25,7 +25,7 @@ use crate::definitions::*;
 use tokio::sync::{mpsc, oneshot};
 
 // Import standard library features
-use std::sync::{Arc, Mutex, mpsc as std_mpsc};
+use std::sync::{mpsc as std_mpsc, Arc, Mutex};
 
 /// The stucture and methods to send WebRequests to the system interface
 ///
@@ -63,7 +63,7 @@ impl WebSend {
 ///
 pub struct WebRequest {
     pub reply_to: oneshot::Sender<WebReply>, // the handle for replying to the reqeust
-    pub request: Request,                // the request
+    pub request: Request,                    // the request
 }
 
 /// An enum to carry requests
@@ -90,14 +90,10 @@ pub enum Request {
     },
 
     /// A variant to cue media to play on a specific channel
-    CueMedia {
-        media_cue: MediaCue, 
-    },
+    CueMedia { media_cue: MediaCue },
 
     /// A variant to change the playback state of a channel
-    ChangeState {
-        channel_state: ChannelState, 
-    },
+    ChangeState { channel_state: ChannelState },
 
     /// A variant to change location and/or size of a video frame
     ResizeChannel {
@@ -105,9 +101,7 @@ pub enum Request {
     },
 
     /// A variant to seek within the media of a channel
-    Seek {
-        channel_seek: ChannelSeek, 
-    },
+    Seek { channel_seek: ChannelSeek },
 
     /// A variant to quit the program
     Quit,
@@ -169,10 +163,14 @@ pub enum InterfaceUpdate {
     Video { video_stream: VideoStream },
 
     /// A variant to resize the video frame
-    Resize { channel_allocation: ChannelAllocation },
+    Resize {
+        channel_allocation: ChannelAllocation,
+    },
 
     /// A variant to realign the video frame
-    Align { channel_realignment: ChannelRealignment },
+    Align {
+        channel_realignment: ChannelRealignment,
+    },
 
     /// A variant to close all the windows and exit
     Quit,
@@ -197,7 +195,12 @@ impl InterfaceSend {
         let (gtk_interface_send, gtk_receive) = std_mpsc::channel();
 
         // Create and return the new items
-        return (InterfaceSend { gtk_interface_send: Arc::new(Mutex::new(gtk_interface_send))}, gtk_receive);
+        return (
+            InterfaceSend {
+                gtk_interface_send: Arc::new(Mutex::new(gtk_interface_send)),
+            },
+            gtk_receive,
+        );
     }
 
     /// A method to send an interface update. This method fails silently.
@@ -210,4 +213,3 @@ impl InterfaceSend {
         }
     }
 }
-

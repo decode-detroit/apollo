@@ -17,10 +17,14 @@
 
 //! This module defines all structures and types used across modules.
 
+// Import tracing features
+use tracing::Level;
+
 // Define program constants
 pub const LOGO_SQUARE: &str = "logo_square.png";
 pub const WINDOW_TITLE: &str = "Apollo";
 pub const DEFAULT_ADDRESS: &str = "127.0.0.1:27655";
+pub const DEFAULT_LOGLEVEL: Level = Level::WARN;
 
 // Define submodules
 mod communication;

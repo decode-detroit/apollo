@@ -29,17 +29,22 @@ use gtk;
 use gtk::prelude::*;
 
 // Import Gstreamer Library
+use gst::prelude::*;
 use gstreamer as gst;
 use gstreamer_video as gst_video;
-use gst::prelude::*;
 
 // Import FNV HashMap
 use fnv::FnvHashMap;
 
-// Import the failure features
-use failure::Error;
+// Import the tracing features
+use tracing::instrument;
+
+// Import anyhow features
+use anyhow::{Context, Result};
 
 /// A helper type to store the playbin and loop media uri
+///
+#[derive(Debug)]
 struct InternalChannel {
     playbin: gst::Element,                  // the playbin for this channel
     channel_loop: Option<String>,           // the default loop media for this channel
@@ -48,6 +53,7 @@ struct InternalChannel {
 
 /// A structure to hold and manipulate the connection to the media backend
 ///
+#[derive(Debug)]
 pub struct MediaPlayback {
     channels: FnvHashMap<u32, InternalChannel>, // the map of channel numbers to internal channels
 }
@@ -56,9 +62,9 @@ pub struct MediaPlayback {
 impl MediaPlayback {
     /// A function to create a new instance of the MediaPlayback
     ///
-    pub fn new() -> Result<MediaPlayback, Error> {
+    pub fn new() -> Result<MediaPlayback> {
         // Try to initialize GStreamer
-        gst::init()?;
+        gst::init().context("Unable to initialize Gstreamer.")?;
 
         // Return the complete module
         Ok(MediaPlayback {
@@ -67,11 +73,14 @@ impl MediaPlayback {
     }
 
     /// A function to stop all playing media
-    /// 
-    pub fn all_stop(&self) -> Result<(), Error> {
+    ///
+    pub fn all_stop(&self) -> Result<()> {
         // Stop the playing media on every channel
         for (_, channel) in self.channels.iter() {
-            channel.playbin.set_state(gst::State::Null)?;
+            channel
+                .playbin
+                .set_state(gst::State::Null)
+                .context("Unable to stop media.")?;
         }
 
         // Indicate success
@@ -80,22 +89,25 @@ impl MediaPlayback {
 
     /// A function a create a new video stream
     ///
-    pub fn define_channel(&mut self, media_channel: MediaChannel) -> Result<Option<VideoStream>, Error> {
+    #[instrument]
+    pub fn define_channel(&mut self, media_channel: MediaChannel) -> Result<Option<VideoStream>> {
         // Check to see if there is an existing channel
         if self.channels.contains_key(&media_channel.channel) {
-            // Return an error
-            return Err(format_err!("Channel is already defined."));
+            // Trace and return an error
+            return Err(anyhow!("Channel is already defined."));
         }
 
         // Create a new playbin
-        let playbin = gst::ElementFactory::make_with_name("playbin", None)?;
+        let playbin = gst::ElementFactory::make_with_name("playbin", None)
+            .context("Unable to create playbin.")?;
 
         // Match based on the audio device specified
         match media_channel.audio_device {
             // An ALSA device
             Some(AudioDevice::Alsa { device_name }) => {
                 // Create and set the audio sink
-                let audio_sink = gst::ElementFactory::make_with_name("alsasink", None)?;
+                let audio_sink = gst::ElementFactory::make_with_name("alsasink", None)
+                    .context("Unable to create alsasink.")?;
                 audio_sink.set_property("device", &device_name);
                 playbin.set_property("audio-sink", &audio_sink);
             }
@@ -103,7 +115,8 @@ impl MediaPlayback {
             // A Pulse Audio device
             Some(AudioDevice::Pulse { device_name }) => {
                 // Create and set the audio sink
-                let audio_sink = gst::ElementFactory::make_with_name("pulsesink", None)?;
+                let audio_sink = gst::ElementFactory::make_with_name("pulsesink", None)
+                    .context("Unable to create pulsesink.")?;
                 audio_sink.set_property("device", &device_name);
                 playbin.set_property("audio-sink", &audio_sink);
             }
@@ -116,13 +129,17 @@ impl MediaPlayback {
         let mut video_stream = None;
         if let Some(video_frame) = media_channel.video_frame {
             // Compose the allocation
-            let allocation = gtk::Rectangle::new(video_frame.left, video_frame.top, video_frame.width, video_frame.height);
+            let allocation = gtk::Rectangle::new(
+                video_frame.left,
+                video_frame.top,
+                video_frame.width,
+                video_frame.height,
+            );
 
             // Try to create the video overlay
-            let video_overlay = match playbin.clone().dynamic_cast::<gst_video::VideoOverlay>()
-            {
+            let video_overlay = match playbin.clone().dynamic_cast::<gst_video::VideoOverlay>() {
                 Ok(overlay) => overlay,
-                _ => return Err(format_err!("Unable to create video stream.")),
+                _ => return Err(anyhow!("Unable to create video stream.")),
             };
 
             // Send the new video stream to the user interface
@@ -146,7 +163,9 @@ impl MediaPlayback {
             playbin.set_property("uri", &loop_uri);
 
             // Start playing the media
-            playbin.set_state(gst::State::Playing)?;
+            playbin
+                .set_state(gst::State::Playing)
+                .context("Unable to start playing media.")?;
         }
 
         // Add the playbin to the channels
@@ -164,18 +183,24 @@ impl MediaPlayback {
     }
 
     /// A function to cue new media on an existing channel
-    /// 
-    pub fn cue_media(&self, media_cue: MediaCue) -> Result<(), Error> {
+    ///
+    pub fn cue_media(&self, media_cue: MediaCue) -> Result<()> {
         // Make sure there is an existing channel
         if let Some(channel) = self.channels.get(&media_cue.channel) {
             // Stop the previous media
-            channel.playbin.set_state(gst::State::Null)?;
+            channel
+                .playbin
+                .set_state(gst::State::Null)
+                .context("Unable to stop media.")?;
 
             // Add the uri to this channel
             channel.playbin.set_property("uri", &media_cue.uri);
 
             // Make sure the new media is playing
-            channel.playbin.set_state(gst::State::Playing)?;
+            channel
+                .playbin
+                .set_state(gst::State::Playing)
+                .context("Unable to start playing media.")?;
 
             // Try to get a lock on the loop mutex
             if let Ok(mut media) = channel.loop_mutex.lock() {
@@ -184,12 +209,12 @@ impl MediaPlayback {
 
             // Otherwise, throw an error
             } else {
-                return Err(format_err!("Unable to change loop media."));
+                return Err(anyhow!("Unable to change loop media."));
             }
 
         // Otherwise, throw an error
         } else {
-            return Err(format_err!("Unable to cue media: Channel not defined."));
+            return Err(anyhow!("Unable to cue media: Channel not defined."));
         }
 
         // Indicate success
@@ -197,26 +222,32 @@ impl MediaPlayback {
     }
 
     /// A function to change the state of a existing channel
-    /// 
-    pub fn change_state(&self, channel_state: ChannelState) -> Result<(), Error> {
+    ///
+    pub fn change_state(&self, channel_state: ChannelState) -> Result<()> {
         // Make sure there is an existing channel
         if let Some(channel) = self.channels.get(&channel_state.channel) {
             // Match the new state
             match channel_state.state {
                 // Switch to playing
                 PlaybackState::Playing => {
-                    channel.playbin.set_state(gst::State::Playing)?;
+                    channel
+                        .playbin
+                        .set_state(gst::State::Playing)
+                        .context("Unable to play media.")?;
                 }
 
                 // Switch to Paused
                 PlaybackState::Paused => {
-                    channel.playbin.set_state(gst::State::Paused)?;
+                    channel
+                        .playbin
+                        .set_state(gst::State::Paused)
+                        .context("Unable to pause media.")?;
                 }
             }
 
         // Otherwise, throw an error
         } else {
-            return Err(format_err!("Unable to change state: Channel not defined."));
+            return Err(anyhow!("Unable to change state: Channel not defined."));
         }
 
         // Indicate success
@@ -224,30 +255,42 @@ impl MediaPlayback {
     }
 
     /// A function to seek within the media on an existing channel
-    /// 
-    pub fn seek(&self, channel_seek: ChannelSeek) -> Result<(), Error> {
+    ///
+    pub fn seek(&self, channel_seek: ChannelSeek) -> Result<()> {
         // Make sure there is an existing channel
         if let Some(channel) = self.channels.get(&channel_seek.channel) {
             // Check the length of the current media on the channel
             if let Some(duration) = channel.playbin.query_duration::<gst::ClockTime>() {
                 // If there is enough time in the media, seek to that point
                 if duration.mseconds() > channel_seek.position {
-                    channel.playbin.seek_simple(gst::SeekFlags::FLUSH, gst::ClockTime::from_mseconds(channel_seek.position))?;
-                
+                    channel
+                        .playbin
+                        .seek_simple(
+                            gst::SeekFlags::FLUSH,
+                            gst::ClockTime::from_mseconds(channel_seek.position),
+                        )
+                        .context("Unable to seek media.")?;
+
                 // Otherwise, seek to the end
                 } else {
                     // Seek to the end and pause
-                    channel.playbin.seek_simple(gst::SeekFlags::FLUSH, gst::ClockTime::from_mseconds(duration.mseconds() - 300))?;
+                    channel
+                        .playbin
+                        .seek_simple(
+                            gst::SeekFlags::FLUSH,
+                            gst::ClockTime::from_mseconds(duration.mseconds() - 300),
+                        )
+                        .context("Unable to seek media.")?;
                 }
-            
+
             // If nothing is playing, return an error
             } else {
-                return Err(format_err!("Unable to seek media: No media playing."));
+                return Err(anyhow!("Unable to seek media: No media playing."));
             }
 
         // Otherwise, throw an error
         } else {
-            return Err(format_err!("Unable to seek media: Channel not defined."));
+            return Err(anyhow!("Unable to seek media: Channel not defined."));
         }
 
         // Indicate success
@@ -258,11 +301,11 @@ impl MediaPlayback {
     fn create_loop_callback(
         playbin: &gst::Element,
         loop_mutex: Arc<Mutex<Option<String>>>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         // Try to access the playbin bus
         let bus = match playbin.bus() {
             Some(bus) => bus,
-            None => return Err(format_err!("Unable to set loop media: Invalid bus.")),
+            None => return Err(anyhow!("Unable to set loop media: Invalid bus.")),
         };
 
         // Create a week reference to the playbin
@@ -281,7 +324,7 @@ impl MediaPlayback {
                             Some(channel) => channel,
                             None => return glib::Continue(true), // Fail silently, but try again
                         };
-                        
+
                         // Try to stop any playing media
                         channel
                             .set_state(gst::State::Null)
@@ -303,7 +346,7 @@ impl MediaPlayback {
 
             // Warn the user of failure
         }) {
-            return Err(format_err!("Unable to set loop media: Duplicate watch."));
+            return Err(anyhow!("Unable to set loop media: Duplicate watch."));
         }
 
         // Indicate success
@@ -324,7 +367,10 @@ impl Drop for MediaPlayback {
             }
 
             // Set the playbin state to null
-            channel.playbin.set_state(gst::State::Null).unwrap_or(gst::StateChangeSuccess::Success);
+            channel
+                .playbin
+                .set_state(gst::State::Null)
+                .unwrap_or(gst::StateChangeSuccess::Success);
         }
     }
 }

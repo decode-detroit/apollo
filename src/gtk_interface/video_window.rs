@@ -31,11 +31,14 @@ use gdk::Cursor;
 use gtk::prelude::*;
 
 // Import Gstreamer Library
-use gstreamer_video as gst_video;
 use gst_video::prelude::*;
+use gstreamer_video as gst_video;
 
 // Import FNV HashMap
 use fnv::FnvHashMap;
+
+// Import tracing features
+use tracing::error;
 
 /// A structure to contain the window for displaying video streams.
 ///
@@ -88,7 +91,7 @@ impl VideoWindow {
     }
 
     /// A method to define a new application window
-    /// 
+    ///
     pub fn define_window(&mut self, definition: WindowDefinition) {
         // Copy the window number
         let window_number = definition.window_number;
@@ -125,7 +128,8 @@ impl VideoWindow {
         let window_number = video_stream.window_number;
 
         // Save the channel -> window mapping to the map
-        self.window_map.insert(video_stream.channel, video_stream.window_number);
+        self.window_map
+            .insert(video_stream.channel, video_stream.window_number);
 
         // Draw a black background
         video_area.connect_draw(|_, cr| {
@@ -144,14 +148,14 @@ impl VideoWindow {
             let gdk_window = match video_area.window() {
                 Some(window) => window,
                 None => {
-                    println!("Unable to get current window for video overlay.");
+                    error!("Unable to get current window for video overlay.");
                     return;
                 }
             };
 
             // Check to make sure the window is native
             if !gdk_window.ensure_native() {
-                println!("Widget is not located inside a native window.");
+                error!("Widget is not located inside a native window.");
                 return;
             }
 
@@ -177,7 +181,7 @@ impl VideoWindow {
                         video_overlay.set_window_handle(xid as usize);
                     }
                 } else {
-                    println!("Unsupported display type: {}", display_type);
+                    error!("Unsupported display type: {}.", display_type);
                 }
             }
 
@@ -198,7 +202,7 @@ impl VideoWindow {
                         video_overlay.set_window_handle(window as usize);
                     }
                 } else {
-                    println!("Unsupported display type {}", display_type);
+                    error!("Unsupported display type {}.", display_type);
                 }
             }
         });
@@ -235,14 +239,22 @@ impl VideoWindow {
             // If the current video was found
             if let Some(allocation) = map.get_mut(&channel_allocation.channel.to_string()) {
                 // Update the allocation
-                *allocation = gtk::Rectangle::new(channel_allocation.video_frame.left, channel_allocation.video_frame.top, channel_allocation.video_frame.width, channel_allocation.video_frame.height);
+                *allocation = gtk::Rectangle::new(
+                    channel_allocation.video_frame.left,
+                    channel_allocation.video_frame.top,
+                    channel_allocation.video_frame.width,
+                    channel_allocation.video_frame.height,
+                );
 
             // Otherwise, warn the user
             } else {
-                println!("Unable to get find current settings for channel {}", channel_allocation.channel);
-                return
+                error!(
+                    "Unable to find current settings for channel {}.",
+                    channel_allocation.channel
+                );
+                return;
             }
-        
+
         // Fail silently
         } else {
             return;
@@ -268,18 +280,49 @@ impl VideoWindow {
                 // Switch based on the direction
                 match channel_realignment.direction {
                     // Adjust the direction accordingly
-                    Direction::Up => *allocation = gtk::Rectangle::new(allocation.x(), allocation.y() - 1, allocation.width(), allocation.height()),
-                    Direction::Down => *allocation = gtk::Rectangle::new(allocation.x(), allocation.y() + 1, allocation.width(), allocation.height()),
-                    Direction::Left => *allocation = gtk::Rectangle::new(allocation.x() - 1, allocation.y(), allocation.width(), allocation.height()),
-                    Direction::Right => *allocation = gtk::Rectangle::new(allocation.x() + 1, allocation.y(), allocation.width(), allocation.height()),
+                    Direction::Up => {
+                        *allocation = gtk::Rectangle::new(
+                            allocation.x(),
+                            allocation.y() - 1,
+                            allocation.width(),
+                            allocation.height(),
+                        )
+                    }
+                    Direction::Down => {
+                        *allocation = gtk::Rectangle::new(
+                            allocation.x(),
+                            allocation.y() + 1,
+                            allocation.width(),
+                            allocation.height(),
+                        )
+                    }
+                    Direction::Left => {
+                        *allocation = gtk::Rectangle::new(
+                            allocation.x() - 1,
+                            allocation.y(),
+                            allocation.width(),
+                            allocation.height(),
+                        )
+                    }
+                    Direction::Right => {
+                        *allocation = gtk::Rectangle::new(
+                            allocation.x() + 1,
+                            allocation.y(),
+                            allocation.width(),
+                            allocation.height(),
+                        )
+                    }
                 }
 
             // Otherwise, warn the user
             } else {
-                println!("Unable to get find current settings for channel {}", channel_realignment.channel);
-                return
+                error!(
+                    "Unable to find current settings for channel {}.",
+                    channel_realignment.channel
+                );
+                return;
             }
-        
+
         // Fail silently
         } else {
             return;
@@ -305,7 +348,7 @@ impl VideoWindow {
         window.set_decorated(false);
         window.set_title(WINDOW_TITLE);
         window.set_icon_from_file(LOGO_SQUARE).unwrap_or(()); // give up if unsuccessful
-        
+
         // Disable the delete button for the window
         window.set_deletable(false);
 
@@ -315,7 +358,7 @@ impl VideoWindow {
             let gdk_window = match window.window() {
                 Some(new_window) => new_window,
                 None => {
-                    println!("Unable to get current window for video overlay.");
+                    error!("Unable to get current window for video overlay.");
                     return;
                 }
             };
@@ -328,7 +371,7 @@ impl VideoWindow {
 
             // Check to make sure the window is native
             if !gdk_window.ensure_native() {
-                println!("Widget is not located inside a native window.");
+                error!("Widget is not located inside a native window.");
                 return;
             }
         });
@@ -342,7 +385,7 @@ impl VideoWindow {
             Inhibit(true)
         });
 
-        // If there is a definition 
+        // If there is a definition
         if let Some(detail) = definition {
             // And it is set to fullscreen, change the window setting
             if detail.fullscreen {
@@ -353,7 +396,7 @@ impl VideoWindow {
             if let Some((height, width)) = detail.dimensions {
                 background.set_size_request(height, width);
             }
-        
+
         // Otherwise, default to fullscreen
         } else {
             window.fullscreen();

@@ -73,14 +73,18 @@ impl GtkInterface {
         let video_window = Rc::new(RefCell::new(video_window));
 
         // Create the GtkInterface
-        let gtk_interface = GtkInterface { video_window, empty_window };
+        let gtk_interface = GtkInterface {
+            video_window,
+            empty_window,
+        };
 
         // Launch the interface monitoring interrupt, currently set to ten times a second FIXME make this async
         let update_interface = clone!(gtk_interface => move || {
             gtk_interface.check_updates(&interface_receive);
             Continue(true) // continue looking for updates indefinitely
         });
-        glib::timeout_add_local(Duration::from_millis(REFRESH_RATE), update_interface); // triggers once every 10ms
+        glib::timeout_add_local(Duration::from_millis(REFRESH_RATE), update_interface);
+        // triggers once every 10ms
     }
 
     /// A method to listen for modifications to the gtk interface.
@@ -111,7 +115,7 @@ impl GtkInterface {
                     // Add the new video stream
                     video_window.define_window(window);
                 }
-                
+
                 // Load the new video stream
                 InterfaceUpdate::Video { video_stream } => {
                     // Add the new video stream
@@ -125,7 +129,9 @@ impl GtkInterface {
                 }
 
                 // Realign a video stream
-                InterfaceUpdate::Align { channel_realignment } => {
+                InterfaceUpdate::Align {
+                    channel_realignment,
+                } => {
                     // Change the location of the video stream
                     video_window.change_alignment(channel_realignment);
                 }
