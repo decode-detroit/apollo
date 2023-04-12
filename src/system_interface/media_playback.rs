@@ -31,7 +31,7 @@ use gtk::prelude::*;
 // Import Gstreamer Library
 use gstreamer as gst;
 use gstreamer_video as gst_video;
-use gst_video::prelude::*;
+use gst::prelude::*;
 
 // Import FNV HashMap
 use fnv::FnvHashMap;
@@ -313,7 +313,7 @@ impl MediaPlayback {
 
 // Implement the drop trait for MediaPlayback
 impl Drop for MediaPlayback {
-    /// This method sets any active playbins to NULL
+    /// This method sets any active playbins to NULL and removes the watch signals
     ///
     fn drop(&mut self) {
         // For every playbin in the active channels
@@ -322,6 +322,9 @@ impl Drop for MediaPlayback {
             if let Some(bus) = channel.playbin.bus() {
                 bus.remove_watch().unwrap_or(());
             }
+
+            // Set the playbin state to null
+            channel.playbin.set_state(gst::State::Null).unwrap_or(gst::StateChangeSuccess::Success);
         }
     }
 }

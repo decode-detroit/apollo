@@ -52,6 +52,7 @@ const REFRESH_RATE: u64 = 10; // the display refresh rate in milliseconds
 #[derive(Clone)]
 pub struct GtkInterface {
     video_window: Rc<RefCell<VideoWindow>>, // the video window, wrapped in a refcell and rc for multi-referencing
+    empty_window: gtk::ApplicationWindow, // Empty GTK window to keep the program running while there are no video videos open
 }
 
 // Implement key GtkInterface functionality
@@ -59,8 +60,12 @@ impl GtkInterface {
     /// A function to create a new instance of the gtk interface.
     ///
     pub fn spawn_interface(
+        application: &gtk::Application,
         interface_receive: mpsc::Receiver<InterfaceUpdate>,
     ) {
+        // Create the empty placeholder window
+        let empty_window = gtk::ApplicationWindow::new(application);
+
         // Create the video window
         let video_window = VideoWindow::new();
 
@@ -68,7 +73,7 @@ impl GtkInterface {
         let video_window = Rc::new(RefCell::new(video_window));
 
         // Create the GtkInterface
-        let gtk_interface = GtkInterface { video_window };
+        let gtk_interface = GtkInterface { video_window, empty_window };
 
         // Launch the interface monitoring interrupt, currently set to ten times a second FIXME make this async
         let update_interface = clone!(gtk_interface => move || {
@@ -125,10 +130,14 @@ impl GtkInterface {
                     video_window.change_alignment(channel_realignment);
                 }
 
-                // Clear all the video channels
-                InterfaceUpdate::Close => {
+                // Clear all the video channels and exit
+                InterfaceUpdate::Quit => {
                     // Otherwise, destroy the video window
                     video_window.clear_all();
+                    unsafe {
+                        self.empty_window.destroy();
+                    }
+                    break;
                 }
             }
         }

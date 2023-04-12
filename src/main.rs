@@ -54,7 +54,6 @@ use tracing_subscriber;
 
 // Import GTK and GIO libraries
 use gio::prelude::*;
-use gtk::prelude::*;
 
 // Import tokio features
 use tokio::runtime::Runtime;
@@ -99,20 +98,7 @@ impl Apollo {
         });
 
         // Create the gtk interface structure to handle video and media playback
-        GtkInterface::spawn_interface(gtk_interface_recv);
-
-        // Create the application window, but do not show it
-        let window = gtk::ApplicationWindow::new(application);
-
-        // Set the default parameters for the window FIXME not really needed
-        window.set_title(WINDOW_TITLE);
-        window.set_icon_from_file(LOGO_SQUARE).unwrap_or(()); // give up if unsuccessful
-
-        // Disable the delete button for the window
-        window.set_deletable(false);
-
-        // Show the window
-        //window.show();
+        GtkInterface::spawn_interface(application, gtk_interface_recv);
     }
 }
 
@@ -129,7 +115,7 @@ fn main() {
     // Register command line options
     let address = Arc::new(Mutex::new(String::from(DEFAULT_ADDRESS)));
     let addr_clone = address.clone();
-    application.add_main_option("address", glib::Char::from(b'a'), glib::OptionFlags::NONE, glib::OptionArg::String, "Optional listening address for the webserver, default is 127.0.0.01:27655", None);
+    application.add_main_option("address", glib::Char::from(b'a'), glib::OptionFlags::NONE, glib::OptionArg::String, "Optional listening address for the webserver, default is 127.0.0.1:27655", None);
     application.connect_handle_local_options(move |_, dict| {
         // Check to see if port was specified
         if dict.contains("address") {
@@ -146,7 +132,7 @@ fn main() {
             }
         }
         
-        // Continue the application
+        // Don't continue the application
         return -1;
     });
 

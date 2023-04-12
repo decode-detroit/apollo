@@ -180,6 +180,12 @@ impl SystemInterface {
                             request.reply_to.send(WebReply::success()).unwrap_or(());
                         }
                     }
+
+                    // If quitting the program
+                    Request::Quit => {
+                        // End the loop
+                        return false;
+                    }
                 }
             }
         }
@@ -214,7 +220,7 @@ impl Drop for SystemInterface {
     ///
     fn drop(&mut self) {
         // Destroy the video windows
-        self.interface_send.send(InterfaceUpdate::Close);
+        self.interface_send.send(InterfaceUpdate::Quit);
     }
 }
 

@@ -108,6 +108,9 @@ pub enum Request {
     Seek {
         channel_seek: ChannelSeek, 
     },
+
+    /// A variant to quit the program
+    Quit,
 }
 
 /// A type to cover all web replies
@@ -171,8 +174,8 @@ pub enum InterfaceUpdate {
     /// A variant to realign the video frame
     Align { channel_realignment: ChannelRealignment },
 
-    /// A variant to close all the windows
-    Close,
+    /// A variant to close all the windows and exit
+    Quit,
 }
 
 /// The stucture and methods to send updates to the user interface.

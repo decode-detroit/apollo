@@ -126,6 +126,7 @@ curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "position":
 And mercifully
 ```
 curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "state": "paused"}' http://localhost:27655/changeState
+curl -H "Content-Type: application/json" -X POST http://localhost:27655/quit
 ```
 
 The port number (and listening location) can be adjusted with the '-a' or '--address' commandline option. If you need to make Apollo available to the open internet, we recommend [Caddy](https://caddyserver.com/). Follow the instructions for setting up a reverse proxy (it will take less than 60 seconds).
