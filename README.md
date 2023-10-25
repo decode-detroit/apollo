@@ -14,7 +14,7 @@ Binary releases for other systems are a work in progress. In the meantime, you'l
 You'll need Rust, GTK+, and GStreamer to compile and run Apollo.
 
 * Installation of Rust: https://www.rust-lang.org/
-* Installation of GTK+: https://www.gtk.org/ (This is usually installed already on GNU/Linux systems. Search for package libgtk-3-0.)
+* Installation of GTK+: https://www.gtk.org/ (This is usually installed already on GNU/Linux systems. Search for package libgtk-3-0, and libgtk-3-dev if you'd like to compile Apollo.)
 
 Follow the directions on both websites to download and install these tools before you proceed.
 

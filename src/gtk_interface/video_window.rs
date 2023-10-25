@@ -136,7 +136,7 @@ impl VideoWindow {
             // Draw the background black
             cr.set_source_rgb(0.0, 0.0, 0.0);
             cr.paint().unwrap_or(());
-            Inhibit(true)
+            glib::Propagation::Stop
         });
 
         // Connect the realize signal for the video area
@@ -382,7 +382,7 @@ impl VideoWindow {
             // Draw the background black
             cr.set_source_rgb(0.0, 0.0, 0.0);
             cr.paint().unwrap_or(());
-            Inhibit(true)
+            glib::Propagation::Stop
         });
 
         // If there is a definition

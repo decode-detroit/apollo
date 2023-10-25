@@ -117,10 +117,8 @@ fn main() {
 
     // Create the default address and log level
     let address = Arc::new(Mutex::new(String::from(DEFAULT_ADDRESS)));
-    //let log_level = Arc::new(Mutex::new(DEFAULT_LOGLEVEL));
 
     // Register command line options
-    //let log_clone = log_level.clone();
     let addr_clone = address.clone();
     application.add_main_option(
         "address",

@@ -15,9 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-//! A module to create the user interface to interact with the underlying
-//! system interface. This module links directly to the system interface and
-//! sends any updates to the application window. FIXME Update Definition
+//! A module to create the video window to diplay the videos triggered
+//! by the user.
 
 // Define public submodules
 #[macro_use]
@@ -81,7 +80,7 @@ impl GtkInterface {
         // Launch the interface monitoring interrupt, currently set to ten times a second FIXME make this async
         let update_interface = clone!(gtk_interface => move || {
             gtk_interface.check_updates(&interface_receive);
-            Continue(true) // continue looking for updates indefinitely
+            glib::ControlFlow::Continue // continue looking for updates indefinitely
         });
         glib::timeout_add_local(Duration::from_millis(REFRESH_RATE), update_interface);
         // triggers once every 10ms

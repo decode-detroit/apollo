@@ -322,7 +322,7 @@ impl MediaPlayback {
                         // Try to get a strong reference to the channel
                         let channel = match channel_weak.upgrade() {
                             Some(channel) => channel,
-                            None => return glib::Continue(true), // Fail silently, but try again
+                            None => return glib::ControlFlow::Continue, // Fail silently, but try again
                         };
 
                         // Try to stop any playing media
@@ -342,7 +342,7 @@ impl MediaPlayback {
             }
 
             // Continue with other signal handlers
-            glib::Continue(true)
+            glib::ControlFlow::Continue
 
             // Warn the user of failure
         }) {
@@ -361,11 +361,6 @@ impl Drop for MediaPlayback {
     fn drop(&mut self) {
         // For every playbin in the active channels
         for (_, channel) in self.channels.drain() {
-            // Try to remove the bus signal watch
-            if let Some(bus) = channel.playbin.bus() {
-                bus.remove_watch().unwrap_or(());
-            }
-
             // Set the playbin state to null
             channel
                 .playbin
