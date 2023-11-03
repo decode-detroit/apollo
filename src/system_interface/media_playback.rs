@@ -37,7 +37,7 @@ use gstreamer_video as gst_video;
 use fnv::FnvHashMap;
 
 // Import the tracing features
-use tracing::instrument;
+use tracing::{instrument, error};
 
 // Import anyhow features
 use anyhow::{Context, Result};
@@ -49,6 +49,7 @@ struct InternalChannel {
     playbin: gst::Element,                  // the playbin for this channel
     channel_loop: Option<String>,           // the default loop media for this channel
     loop_mutex: Arc<Mutex<Option<String>>>, // the current loop media handle for this channel
+    watch_guard: gst::bus::BusWatchGuard,   // the guard for the watch funcions on the playback bus
 }
 
 /// A structure to hold and manipulate the connection to the media backend
@@ -155,7 +156,7 @@ impl MediaPlayback {
         let loop_mutex = Arc::new(Mutex::new(media_channel.loop_media.clone()));
 
         // Create the loop media callback
-        MediaPlayback::create_loop_callback(&playbin, loop_mutex.clone())?;
+        let watch_guard = MediaPlayback::create_loop_callback(&playbin, loop_mutex.clone())?;
 
         // If loop media was specified
         if let Some(loop_uri) = media_channel.loop_media.clone() {
@@ -175,6 +176,7 @@ impl MediaPlayback {
                 playbin,
                 channel_loop: media_channel.loop_media.clone(),
                 loop_mutex,
+                watch_guard,
             },
         );
 
@@ -301,7 +303,7 @@ impl MediaPlayback {
     fn create_loop_callback(
         playbin: &gst::Element,
         loop_mutex: Arc<Mutex<Option<String>>>,
-    ) -> Result<()> {
+    ) -> Result<gst::bus::BusWatchGuard> {
         // Try to access the playbin bus
         let bus = match playbin.bus() {
             Some(bus) => bus,
@@ -312,7 +314,7 @@ impl MediaPlayback {
         let channel_weak = playbin.downgrade();
 
         // Connect the signal handler for the end of stream notification
-        if let Err(_) = bus.add_watch(move |_, msg| {
+        if let Ok(watch_guard) = bus.add_watch(move |_, msg| {
             // If the end of stream message is received
             if let gst::MessageView::Eos(..) = msg.view() {
                 // Wait for access to the current loop media
@@ -326,17 +328,19 @@ impl MediaPlayback {
                         };
 
                         // Try to stop any playing media
-                        channel
-                            .set_state(gst::State::Null)
-                            .unwrap_or(gst::StateChangeSuccess::Success);
+                        if let Err(_) = channel.set_state(gst::State::Null) {
+                            // Share the error
+                            error!("Unable to stop previously playing media.");
+                        }
 
                         // If media was specified, add the loop uri to this channel
                         channel.set_property("uri", &media);
 
                         // Try to start playing the media
-                        channel
-                            .set_state(gst::State::Playing)
-                            .unwrap_or(gst::StateChangeSuccess::Success);
+                        if let Err(_) = channel.set_state(gst::State::Playing) {
+                            // Share the error
+                            error!("Unable to start new media.");
+                        }
                     }
                 }
             }
@@ -346,11 +350,13 @@ impl MediaPlayback {
 
             // Warn the user of failure
         }) {
+            // Return the watch guard
+            return Ok(watch_guard);
+        
+        // Otherwise, indicate failure
+        } else {
             return Err(anyhow!("Unable to set loop media: Duplicate watch."));
         }
-
-        // Indicate success
-        Ok(())
     }
 }
 
@@ -366,6 +372,9 @@ impl Drop for MediaPlayback {
                 .playbin
                 .set_state(gst::State::Null)
                 .unwrap_or(gst::StateChangeSuccess::Success);
+
+            // Drop the watch guard
+            drop(channel.watch_guard)
         }
     }
 }
