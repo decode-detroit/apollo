@@ -145,7 +145,7 @@ Take careful notes of the steps to
 
 Note: These instructions are written for *compiling* the software on Ubuntu 22.04.
 
-### Cross-Compiling To Raspbian (armhf, 32bit)
+### Cross-Compiling for Raspberry Pi (armhf, 32bit)
 
 Note: These settings are largely analogous for arm64, but the 64-bit version hasn't been tested.
 
@@ -178,6 +178,39 @@ sudo apt install libgtk-3-dev:armhf libzmq3-dev:armhf libgstreamer1.0-dev:armhf 
 When you compile, pass several environment variables to the compilation.
 ```
 env PKG_CONFIG_ALLOW_CROSS=1 PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig/ cargo build_armhf
+```
+
+### Cross-Compiling for Raspberry Pi (aarch64/arm64, 64bit)
+
+To cross-compile, install the correct rust target and install the linker.
+```
+rustup target add aarch64-unknown-linux-gnu
+sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu 
+```
+You'll also need to add the arm64 architecture to dpkg.
+```
+sudo dpkg --add-architecture arm64
+```
+And add these sources to the end of /etc/apt/sources.list (or if also using 32 bit, combine the two like ```[arch=armhf,arm64]```).
+```
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy universe
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates universe
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy multiverse
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates multiverse
+```
+Make sure to add `[arch=amd64]` to the other sources while you're at it.
+
+Install the dev packages for the new architecture.
+```
+sudo apt update
+sudo apt install libgtk-3-dev:arm64 libzmq3-dev:arm64 libgstreamer1.0-dev:arm64 libgstreamer-plugins-base1.0-dev:arm64 gstreamer1.0-plugins-base:arm64 gstreamer1.0-plugins-good:arm64 gstreamer1.0-plugins-bad:arm64 gstreamer1.0-plugins-ugly:arm64 gstreamer1.0-libav:arm64 libgstrtspserver-1.0-dev:arm64 libges-1.0-dev:arm64 libges-1.0-0:arm64
+```
+
+When you compile, pass several environment variables to the compilation.
+```
+env PKG_CONFIG_ALLOW_CROSS=1 PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig/ cargo build_arm64
 ```
 
 #### Prepare Your Raspberry Pi
