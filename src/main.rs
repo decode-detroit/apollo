@@ -52,11 +52,9 @@ use tracing::{error, Level};
 #[macro_use]
 extern crate anyhow;
 
-// Import GTK and GIO libraries
-use gtk::prelude::*;
-
-// Import GStreamer Features
-use gstreamer_video as gst_video;
+// Import GTK library
+use gtk4 as gtk;
+use gtk4::prelude::*;
 
 // Import tokio features
 use tokio::runtime::Runtime;
@@ -125,16 +123,16 @@ fn main() {
     let addr_clone = address.clone();
     application.add_main_option(
         "address",
-        gst_video::glib::Char::from(b'a'),
-        gst_video::glib::OptionFlags::NONE,
-        gst_video::glib::OptionArg::String,
+        glib::Char::from(b'a'),
+        glib::OptionFlags::NONE,
+        glib::OptionArg::String,
         "Optional listening address for the webserver, default is 127.0.0.1:27655",
         None,
     );
     application.add_main_option(
         "logLevel",
-        gst_video::glib::Char::from(b'l'),
-        gst_video::glib::OptionFlags::NONE,
+        glib::Char::from(b'l'),
+        glib::OptionFlags::NONE,
         glib::OptionArg::String,
         "Optional logging level for tracing. Options are Trace, Info, Debug, Warn, Error",
         None,

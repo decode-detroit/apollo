@@ -138,7 +138,7 @@ pub struct WindowDefinition {
 pub struct VideoStream {
     pub channel: u32,               // the channel where the video should be played
     pub window_number: u32,         // the window where the video should be played
-    pub allocation: gtk::Rectangle, // the location of the video in the screen
+    pub allocation: gdk::Rectangle, // the location of the video in the screen
     pub video_overlay: gst_video::VideoOverlay, // the video overlay which should be connected to the video id
 }
 

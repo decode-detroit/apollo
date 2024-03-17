@@ -23,9 +23,6 @@ use crate::definitions::*;
 // Import standard library features
 use std::sync::{Arc, Mutex};
 
-// Import GTK Library
-use gtk;
-
 // Import Gstreamer Library
 use gst::prelude::*;
 use gstreamer as gst;
@@ -128,7 +125,7 @@ impl MediaPlayback {
         let mut video_stream = None;
         if let Some(video_frame) = media_channel.video_frame {
             // Compose the allocation
-            let allocation = gtk::Rectangle::new(
+            let allocation = gdk::Rectangle::new(
                 video_frame.left,
                 video_frame.top,
                 video_frame.width,

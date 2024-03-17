@@ -39,8 +39,8 @@ use std::time::Duration;
 
 // Import GTK and GDK libraries
 use glib;
-use gtk;
-use gtk::prelude::*;
+use gtk4 as gtk;
+use gtk4::prelude::*;
 
 // Define user interface constants
 const REFRESH_RATE: u64 = 10; // the display refresh rate in milliseconds

@@ -27,7 +27,8 @@ use std::ffi::c_void;
 use std::rc::Rc;
 
 // Import GTK and GDK libraries
-use gtk::prelude::*;
+use gtk4 as gtk;
+use gtk4::prelude::*;
 use gdk::Cursor;
 
 // Import Gstreamer Library
@@ -44,7 +45,7 @@ use tracing::error;
 ///
 pub struct VideoWindow {
     overlay_map: FnvHashMap<u32, gtk::Overlay>, // the mapping of the overlay widgets
-    channel_map: Rc<RefCell<FnvHashMap<std::string::String, gtk::Rectangle>>>, // the mapping of channel numbers to allocations
+    channel_map: Rc<RefCell<FnvHashMap<std::string::String, gdk::Rectangle>>>, // the mapping of channel numbers to allocations
     window_map: FnvHashMap<u32, u32>, // the mapping of channel numbers to windows
 }
 
@@ -58,7 +59,7 @@ impl VideoWindow {
         let window_map = FnvHashMap::default();
 
         // Create the channel map
-        let channel_map: Rc<RefCell<FnvHashMap<std::string::String, gtk::Rectangle>>> =
+        let channel_map: Rc<RefCell<FnvHashMap<std::string::String, gdk::Rectangle>>> =
             Rc::new(RefCell::new(FnvHashMap::default()));
 
         // Return the completed Video Window
@@ -239,7 +240,7 @@ impl VideoWindow {
             // If the current video was found
             if let Some(allocation) = map.get_mut(&channel_allocation.channel.to_string()) {
                 // Update the allocation
-                *allocation = gtk::Rectangle::new(
+                *allocation = gdk::Rectangle::new(
                     channel_allocation.video_frame.left,
                     channel_allocation.video_frame.top,
                     channel_allocation.video_frame.width,
@@ -281,7 +282,7 @@ impl VideoWindow {
                 match channel_realignment.direction {
                     // Adjust the direction accordingly
                     Direction::Up => {
-                        *allocation = gtk::Rectangle::new(
+                        *allocation = gdk::Rectangle::new(
                             allocation.x(),
                             allocation.y() - 1,
                             allocation.width(),
@@ -289,7 +290,7 @@ impl VideoWindow {
                         )
                     }
                     Direction::Down => {
-                        *allocation = gtk::Rectangle::new(
+                        *allocation = gdk::Rectangle::new(
                             allocation.x(),
                             allocation.y() + 1,
                             allocation.width(),
@@ -297,7 +298,7 @@ impl VideoWindow {
                         )
                     }
                     Direction::Left => {
-                        *allocation = gtk::Rectangle::new(
+                        *allocation = gdk::Rectangle::new(
                             allocation.x() - 1,
                             allocation.y(),
                             allocation.width(),
@@ -305,7 +306,7 @@ impl VideoWindow {
                         )
                     }
                     Direction::Right => {
-                        *allocation = gtk::Rectangle::new(
+                        *allocation = gdk::Rectangle::new(
                             allocation.x() + 1,
                             allocation.y(),
                             allocation.width(),
@@ -342,29 +343,20 @@ impl VideoWindow {
     //
     fn new_window(&self, definition: Option<WindowDefinition>) -> (gtk::Window, gtk::Overlay) {
         // Create the new window
-        let window = gtk::Window::new(gtk::WindowType::Toplevel);
+        let window = gtk::Window::new();
 
         // Set window parameters
         window.set_decorated(false);
-        window.set_title(WINDOW_TITLE);
-        window.set_icon_from_file(LOGO_SQUARE).unwrap_or(()); // give up if unsuccessful
+        window.set_title(Some(WINDOW_TITLE));
+        window.set_default_icon_name(LOGO_SQUARE).unwrap_or(()); // give up if unsuccessful
 
         // Disable the delete button for the window
         window.set_deletable(false);
 
         // Connect the realize signal for the video area
         window.connect_realize(move |window| {
-            // Try to get a copy of the GDk window
-            let gdk_window = match window.window() {
-                Some(new_window) => new_window,
-                None => {
-                    error!("Unable to get current window for video overlay.");
-                    return;
-                }
-            };
-
             // Set the window cursor to blank
-            let display = gdk_window.display();
+            let display = window.display();
             if let Some(cursor) = Cursor::for_display(&display, gdk::CursorType::BlankCursor) {
                 gdk_window.set_cursor(Some(&cursor));
             }
