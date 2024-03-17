@@ -60,6 +60,11 @@ gdk-3.0 issue:
 sudo apt install build-essential libgtk-3-dev
 ```
 
+graphene-gobject issue:
+```
+sudo apt install libgraphene-1.0-dev
+```
+
 ## Usage
 
 To play media on Apollo, you need to
