@@ -24,9 +24,7 @@ use crate::definitions::*;
 use std::sync::{Arc, Mutex};
 
 // Import GTK Library
-use glib;
 use gtk;
-use gtk::prelude::*;
 
 // Import Gstreamer Library
 use gst::prelude::*;

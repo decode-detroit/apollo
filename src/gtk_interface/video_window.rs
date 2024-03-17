@@ -27,12 +27,12 @@ use std::ffi::c_void;
 use std::rc::Rc;
 
 // Import GTK and GDK libraries
-use gdk::Cursor;
 use gtk::prelude::*;
+use gdk::Cursor;
 
 // Import Gstreamer Library
-use gst_video::prelude::*;
 use gstreamer_video as gst_video;
+use gst_video::prelude::*;
 
 // Import FNV HashMap
 use fnv::FnvHashMap;
@@ -136,7 +136,7 @@ impl VideoWindow {
             // Draw the background black
             cr.set_source_rgb(0.0, 0.0, 0.0);
             cr.paint().unwrap_or(());
-            glib::Propagation::Stop
+            gst_video::glib::Propagation::Stop
         });
 
         // Connect the realize signal for the video area
@@ -382,7 +382,7 @@ impl VideoWindow {
             // Draw the background black
             cr.set_source_rgb(0.0, 0.0, 0.0);
             cr.paint().unwrap_or(());
-            glib::Propagation::Stop
+            gst_video::glib::Propagation::Stop
         });
 
         // If there is a definition

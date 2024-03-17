@@ -53,7 +53,10 @@ use tracing::{error, Level};
 extern crate anyhow;
 
 // Import GTK and GIO libraries
-use gio::prelude::*;
+use gtk::prelude::*;
+
+// Import GStreamer Features
+use gstreamer_video as gst_video;
 
 // Import tokio features
 use tokio::runtime::Runtime;
@@ -113,7 +116,7 @@ impl Apollo {
 ///
 fn main() {
     // Create the gtk application window. Failure results in immediate panic!
-    let application = gtk::Application::new(None, gio::ApplicationFlags::empty());
+    let application = gtk::Application::new(None, gtk::gio::ApplicationFlags::empty());
 
     // Create the default address and log level
     let address = Arc::new(Mutex::new(String::from(DEFAULT_ADDRESS)));
@@ -122,16 +125,16 @@ fn main() {
     let addr_clone = address.clone();
     application.add_main_option(
         "address",
-        glib::Char::from(b'a'),
-        glib::OptionFlags::NONE,
-        glib::OptionArg::String,
+        gst_video::glib::Char::from(b'a'),
+        gst_video::glib::OptionFlags::NONE,
+        gst_video::glib::OptionArg::String,
         "Optional listening address for the webserver, default is 127.0.0.1:27655",
         None,
     );
     application.add_main_option(
         "logLevel",
-        glib::Char::from(b'l'),
-        glib::OptionFlags::NONE,
+        gst_video::glib::Char::from(b'l'),
+        gst_video::glib::OptionFlags::NONE,
         glib::OptionArg::String,
         "Optional logging level for tracing. Options are Trace, Info, Debug, Warn, Error",
         None,
