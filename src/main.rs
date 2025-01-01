@@ -27,8 +27,8 @@ extern crate serde;
 
 // Define program modules
 mod definitions;
-mod system_interface;
 mod gtk_interface;
+mod system_interface;
 mod web_interface;
 
 // Import crate definitions

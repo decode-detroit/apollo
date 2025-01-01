@@ -37,7 +37,7 @@ use gstreamer_video as gst_video;
 use fnv::FnvHashMap;
 
 // Import the tracing features
-use tracing::{instrument, error};
+use tracing::{error, instrument};
 
 // Import anyhow features
 use anyhow::{Context, Result};
@@ -352,7 +352,7 @@ impl MediaPlayback {
         }) {
             // Return the watch guard
             return Ok(watch_guard);
-        
+
         // Otherwise, indicate failure
         } else {
             return Err(anyhow!("Unable to set loop media: Duplicate watch."));
