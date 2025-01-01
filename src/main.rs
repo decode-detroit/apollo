@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-//! The main module of the minerva program which pulls from the other modules.
+//! The main module of the apollo program which pulls from the other modules.
 
 // Allow deeper recursion testing for web server
 #![recursion_limit = "256"]
@@ -26,10 +26,8 @@
 extern crate serde;
 
 // Define program modules
-#[macro_use]
 mod definitions;
 mod system_interface;
-#[macro_use]
 mod gtk_interface;
 mod web_interface;
 
