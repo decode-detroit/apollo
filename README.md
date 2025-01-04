@@ -139,7 +139,7 @@ In the future, additional options such as changing media to a different channel,
 
 If you would like realtime backup of the media playlist for intant recovery, install a Redis server on your machine. The most up-to-date instructions for installing Redis can be found here: https://redis.io/.
 
-The default configuration should work just fine, and Minerva will update the settings to make sure every change is written to the disk. To connect to the backup server, use the commandline option -b or --backup. The typical server location is redis://127.0.0.1:6379.
+The default configuration should work just fine, and Apollo will update the settings to make sure every change is written to the disk. To connect to the backup server, use the commandline option '-b' or '--backup'. The typical server location is redis://127.0.0.1:6379.
 
 ## Raspberry Pi-like Systems (ARM)
 
@@ -152,8 +152,6 @@ Take careful notes of the steps to
 Note: These instructions are written for *compiling* the software on Ubuntu 22.04.
 
 ### Cross-Compiling for Raspberry Pi (armhf, 32bit)
-
-Note: These settings are largely analogous for arm64, but the 64-bit version hasn't been tested.
 
 To cross-compile, install the correct rust target and install the linker.
 ```
@@ -173,7 +171,7 @@ deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates universe
 deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy multiverse
 deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates multiverse
 ```
-Make sure to add `[arch=amd64]` to the other sources while you're at it.
+Make sure to add `[arch=amd64]` to the original sources while you're at it.
 
 Install the gtk dev packages for the new architecture.
 ```
@@ -206,7 +204,7 @@ deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates universe
 deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy multiverse
 deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates multiverse
 ```
-Make sure to add `[arch=amd64]` to the other sources while you're at it.
+Make sure to add `[arch=amd64]` to the original sources while you're at it.
 
 Install the dev packages for the new architecture.
 ```

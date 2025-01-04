@@ -612,7 +612,7 @@ impl BackupHandler {
 
 // Implement the drop trait for the backup handler struct.
 impl Drop for BackupHandler {
-    /// This method removes all the the existing statuses from the status server.
+    /// This method removes all the the existing data from the server.
     ///
     /// # Errors
     ///
@@ -651,7 +651,7 @@ mod tests {
         // Create the backup handler
         let mut backup_handler = BackupHandler::new(
             String::from("127.0.0.1:27655"),
-            Some("redis://127.0.0.1:6379".to_string()),
+            Some(String::from("redis://127.0.0.1:6379")),
             interface_send,
         )
         .await;
