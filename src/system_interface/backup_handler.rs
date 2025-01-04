@@ -64,10 +64,6 @@ impl BackupHandler {
     /// This function will raise an error if it is unable to connect to the
     /// Redis server provided.
     ///
-    /// Like all BackupHandler functions and methods, this function will fail
-    /// gracefully by notifying of any errors on the update line and returning
-    /// None.
-    ///
     pub async fn new(
         address: String,
         server_location: Option<String>,
