@@ -38,6 +38,9 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio::time::sleep;
 
+// Import FNV HashSet
+use fnv::FnvHashSet;
+
 // Import tracing features
 use tracing::{info, error};
 
@@ -52,6 +55,7 @@ pub struct SystemInterface {
     web_receive: mpsc::Receiver<WebRequest>, // the receiving line for web requests
     media_playback: MediaPlayback, // the structure for controlling media playback
     backup_handler: BackupHandler, // the structure for managing the live system backup
+    windows: FnvHashSet<u32>,  // a set of already-defined windows (to avoid duplication)
 }
 
 // Implement key SystemInterface functionality
@@ -80,7 +84,7 @@ impl SystemInterface {
         }
 
         // Initialize the backup handler
-        let backup_handler = BackupHandler::new(address, server_location).await;
+        let backup_handler = BackupHandler::new(address, server_location, interface_send.clone()).await;
 
         // Create the new system interface instance
         let sys_interface = SystemInterface {
@@ -88,6 +92,7 @@ impl SystemInterface {
             web_receive,
             media_playback,
             backup_handler,
+            windows: FnvHashSet::default(),
         };
 
         // Regardless, return the new SystemInterface and general send line
@@ -131,14 +136,22 @@ impl SystemInterface {
 
                     // If defining a new window
                     Request::DefineWindow { window } => {
-                        // Send the window definition to the gtk interface
-                        self.interface_send.send(InterfaceUpdate::Window { window: window.clone() });
+                        // If the window isn't already defined, insert it
+                        if self.windows.insert(window.window_number) {
+                            // Send the window definition to the gtk interface
+                            self.interface_send.send(InterfaceUpdate::Window { window: window.clone() });
 
-                        // Backup the window definition
-                        self.backup_handler.backup_window(window).await;
+                            // Backup the window definition
+                            self.backup_handler.backup_window(window).await;
 
-                        // Reply success to the web interface
-                        request.reply_to.send(WebReply::success()).unwrap_or(());
+                            // Reply success to the web interface
+                            request.reply_to.send(WebReply::success()).unwrap_or(());
+                        
+                        // Trace the error and reply with the error
+                        } else {
+                            error!("Window was already defined.");
+                            request.reply_to.send(WebReply::failure(format!("Window was already defined."))).unwrap_or(());
+                        }
                     }
 
                     // If defining a new channel
@@ -289,9 +302,6 @@ impl SystemInterface {
                 break;
             }
         }
-
-        // Drop all associated data in system interface
-        drop(self);
     }
 
     // A helper method to reload the media playlist from a backup
@@ -341,15 +351,5 @@ impl SystemInterface {
                 }
             }
         }
-    }
-}
-
-// Implement the drop trait for SystemInterface
-impl Drop for SystemInterface {
-    /// This method removes any active video windows
-    ///
-    fn drop(&mut self) {
-        // Destroy the video windows
-        self.interface_send.send(InterfaceUpdate::Quit);
     }
 }

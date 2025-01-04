@@ -52,6 +52,7 @@ pub struct BackupHandler {
     window_list: WindowList, // the list of all currently defined windows, in the order defined
     channel_list: ChannelList, // the list of all currently  defined channels, in the order defined
     media_playlist: MediaPlaylist, // the current media playback for each channel
+    interface_send: InterfaceSend, // a sending line to pass the signal to close after cleanup is complete
 }
 
 // Implement key features for the status handler
@@ -67,7 +68,7 @@ impl BackupHandler {
     /// gracefully by notifying of any errors on the update line and returning
     /// None.
     ///
-    pub async fn new(address: String, server_location: Option<String>) -> Self {
+    pub async fn new(address: String, server_location: Option<String>, interface_send: InterfaceSend) -> Self {
         // If a server location was specified
         if let Some(location) = server_location {
             // Try to connect to the Redis server
@@ -97,6 +98,7 @@ impl BackupHandler {
                         window_list: Vec::new(),
                         channel_list: Vec::new(),
                         media_playlist: MediaPlaylist::default(),
+                        interface_send,
                     };
 
                 // Indicate that there was a failure to connect to the server
@@ -118,6 +120,7 @@ impl BackupHandler {
             window_list: Vec::new(),
             channel_list: Vec::new(),
             media_playlist: MediaPlaylist::default(),
+            interface_send,
         }
     }
 
@@ -616,6 +619,9 @@ impl Drop for BackupHandler {
             // Try to delete the window backup if it exists
             let _: RedisResult<bool> = connection.del(&format!("apollo:{}:windows", self.address));
         }
+
+        // Close the GTK program and video windows
+        self.interface_send.send(InterfaceUpdate::Quit);
     }
 }
 
@@ -626,11 +632,15 @@ mod tests {
 
     // Test the backup module
     #[tokio::test]
-    async fn backup_game() {
+    async fn backup_media() {
+        // Create the interface sender (empty)
+        let (interface_send, _rx) = InterfaceSend::new();
+
         // Create the backup handler
         let mut backup_handler = BackupHandler::new(
             String::from("127.0.0.1:27655"),
             Some("redis://127.0.0.1:6379".to_string()),
+            interface_send,
         )
         .await;
 
