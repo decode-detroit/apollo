@@ -20,6 +20,7 @@
 //! to the application window.
 
 // Define submodules
+mod backup_handler;
 mod media_playback;
 
 // Import crate definitions
@@ -27,12 +28,18 @@ use crate::definitions::*;
 
 // Import submodute definitions
 use media_playback::MediaPlayback;
+use backup_handler::BackupHandler;
+
+// Import standard library features
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 // Import Tokio features
 use tokio::sync::mpsc;
+use tokio::time::sleep;
 
 // Import tracing features
-use tracing::error;
+use tracing::{info, error};
 
 // Import anyhow features
 use anyhow::Result;
@@ -44,24 +51,43 @@ pub struct SystemInterface {
     interface_send: InterfaceSend, // a sending line to pass interface updates
     web_receive: mpsc::Receiver<WebRequest>, // the receiving line for web requests
     media_playback: MediaPlayback, // the structure for controlling media playback
+    backup_handler: BackupHandler, // the structure for managing the live system backup
 }
 
 // Implement key SystemInterface functionality
 impl SystemInterface {
     /// A function to create a new, blank instance of the system interface.
     ///
-    pub async fn new(interface_send: InterfaceSend) -> Result<(Self, WebSend)> {
+    pub async fn new(interface_send: InterfaceSend, user_address: Arc<Mutex<String>>, user_server_location: Arc<Mutex<Option<String>>>) -> Result<(Self, WebSend)> {
         // Create the web send for the web interface
         let (web_send, web_receive) = WebSend::new();
 
         // Try to initialize the media playback module
         let media_playback = MediaPlayback::new()?;
 
+        // Try to extract the user defined address
+        let mut address = DEFAULT_ADDRESS.to_string();
+        if let Ok(lock) = user_address.try_lock() {
+            // Copy the address
+            address = lock.clone();
+        }
+
+        // Try to extract the user defined server_location
+        let mut server_location = None;
+        if let Ok(lock) = user_server_location.try_lock() {
+            // Copy the address
+            server_location = lock.clone();
+        }
+
+        // Initialize the backup handler
+        let backup_handler = BackupHandler::new(address, server_location).await;
+
         // Create the new system interface instance
         let sys_interface = SystemInterface {
             interface_send,
             web_receive,
             media_playback,
+            backup_handler,
         };
 
         // Regardless, return the new SystemInterface and general send line
@@ -80,7 +106,10 @@ impl SystemInterface {
                     // If realigning the channel
                     Request::AlignChannel { channel_realignment } => {
                         // Pass the new video location to the gtk interface
-                        self.interface_send.send(InterfaceUpdate::Align { channel_realignment });
+                        self.interface_send.send(InterfaceUpdate::Align { channel_realignment: channel_realignment.clone()});
+
+                        // Backup the change to the channel
+                        self.backup_handler.backup_channel_align(channel_realignment).await;
 
                         // Reply success to the web interface
                         request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -103,7 +132,10 @@ impl SystemInterface {
                     // If defining a new window
                     Request::DefineWindow { window } => {
                         // Send the window definition to the gtk interface
-                        self.interface_send.send(InterfaceUpdate::Window { window });
+                        self.interface_send.send(InterfaceUpdate::Window { window: window.clone() });
+
+                        // Backup the window definition
+                        self.backup_handler.backup_window(window).await;
 
                         // Reply success to the web interface
                         request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -112,7 +144,7 @@ impl SystemInterface {
                     // If defining a new channel
                     Request::DefineChannel { media_channel } => {
                         // Add the channel definition
-                        match self.media_playback.define_channel(media_channel) {
+                        match self.media_playback.define_channel(media_channel.clone()) {
                             // If successful
                             Ok(possible_stream) => {
                                 // If a stream was created
@@ -120,6 +152,9 @@ impl SystemInterface {
                                     // Pass the new video stream to the gtk interface
                                     self.interface_send.send(InterfaceUpdate::Video { video_stream });
                                 }
+
+                                // Backup the window definition
+                                self.backup_handler.backup_channel(media_channel).await;
 
                                 // Reply success to the web interface
                                 request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -137,13 +172,17 @@ impl SystemInterface {
                     // If cuing a new media selection
                     Request::CueMedia { media_cue } => {
                         // Try to cue the new media
-                        if let Err(error) = self.media_playback.cue_media(media_cue) {
+                        if let Err(error) = self.media_playback.cue_media(media_cue.clone()) {
                             // If there was an error, trace the error and reply with the error
                             error!("{}", error);
                             request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(());
 
-                        // Otherwise, indicate success
+                        // Otherwise, backup the media and indicate success
                         } else {
+                            // Backup the media
+                            self.backup_handler.backup_media(media_cue).await;
+                            
+                            // Indicate success
                             request.reply_to.send(WebReply::success()).unwrap_or(());
                         }
                     }
@@ -151,13 +190,17 @@ impl SystemInterface {
                     // If changing the state of a channel
                     Request::ChangeState { channel_state } => {
                         // Try to cue the new media
-                        if let Err(error) = self.media_playback.change_state(channel_state) {
+                        if let Err(error) = self.media_playback.change_state(channel_state.clone()) {
                             // If there was an error, trace the error and reply with the error
                             error!("{}", error);
                             request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(());
 
-                        // Otherwise, indicate success
+                        // Otherwise, backup the change and indicate success
                         } else {
+                            // Backup the change
+                            self.backup_handler.backup_media_state(channel_state).await;
+
+                            // Indicate success
                             request.reply_to.send(WebReply::success()).unwrap_or(());
                         }
                     }
@@ -165,7 +208,10 @@ impl SystemInterface {
                     // If resizing a channel
                     Request::ResizeChannel { channel_allocation } => {
                         // Pass the new video location to the gtk interface
-                        self.interface_send.send(InterfaceUpdate::Resize { channel_allocation });
+                        self.interface_send.send(InterfaceUpdate::Resize { channel_allocation: channel_allocation.clone() });
+
+                        // Backup the change to the channel
+                        self.backup_handler.backup_channel_resize(channel_allocation).await;
 
                         // Reply success to the web interface
                         request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -174,13 +220,17 @@ impl SystemInterface {
                     // If seeking media on a channel
                     Request::Seek { channel_seek } => {
                         // Try to cue the new media
-                        if let Err(error) = self.media_playback.seek(channel_seek) {
+                        if let Err(error) = self.media_playback.seek(channel_seek.clone()) {
                             // If there was an error, trace the error and reply with the error
                             error!("{}", error);
                             request.reply_to.send(WebReply::failure(format!("{}", error))).unwrap_or(());
 
-                        // Otherwise, indicate success
+                        // Otherwise, backup the seek and indicate success
                         } else {
+                            // Backup the change
+                            self.backup_handler.backup_media_seek(channel_seek).await;
+
+                            // Indicate success
                             request.reply_to.send(WebReply::success()).unwrap_or(());
                         }
                     }
@@ -200,11 +250,38 @@ impl SystemInterface {
 
     /// A method to run an infinite number of interations of the system
     /// interface to update the underlying system of any media changes.
+    /// 
+    /// At startup, this loop looks for any exsting backup data and loads
+    /// that data, if it's found. Media stored remotely may load too slowly
+    /// to be resumed correctly.
     ///
     /// When this loop completes, it will consume the system interface and drop
     /// all associated data.
     ///
     pub async fn run(mut self) {
+        // Check for an existing backup
+        if let Some((mut window_list, mut channel_list, media_playlist)) = self.backup_handler.reload_backup() {
+            // Reload the window list (reloaded in the order they were defined)
+            for window in window_list.drain(..) {
+                self.interface_send.send(InterfaceUpdate::Window { window: window });
+            }
+
+            // Reload the channel list (reloaded in the order they were defined)
+            for channel in channel_list.drain(..) {
+                // If the channel is successfully defined
+                if let Ok(possible_stream) = self.media_playback.define_channel(channel) {
+                    // If a stream was created
+                    if let Some(video_stream) = possible_stream {
+                        // Pass the new video stream to the gtk interface
+                        self.interface_send.send(InterfaceUpdate::Video { video_stream });
+                    }
+                }
+            }
+
+            // Reload the media playlist, one for each channel
+            self.restore_playlist(media_playlist).await;
+        }
+        
         // Loop the structure indefinitely
         loop {
             // Repeat endlessly until run_once reaches close
@@ -215,6 +292,55 @@ impl SystemInterface {
 
         // Drop all associated data in system interface
         drop(self);
+    }
+
+    // A helper method to reload the media playlist from a backup
+    async fn restore_playlist(&mut self, mut playlist: MediaPlaylist) {
+        // Look through the playlist for media
+        for (channel, playback) in playlist.iter() {
+            // For each channel, cue the media
+            info!("Playing media on channel {}.", channel);
+            
+            // Alert the user if the media failed to play
+            if let Err(error) = self.media_playback.cue_media(playback.media_cue.clone()) {
+                error!("Unable to restart media on channel {}: {}", channel, error);
+            }
+        }
+
+        // Wait for all the media to start playing and count the delay
+        sleep(Duration::from_millis(500)).await;
+        let delay_millis: u64 = 500; // the delay above
+
+        // Look through the playlist for seek position
+        for (channel, playback) in playlist.iter() {
+            // Calculate the new seek position
+            let position = playback.seek_to.as_millis() as u64 + delay_millis; // compensate for our additional delays
+            info!(
+                "Seeking channel {} to {}.{:0>3}.",
+                channel,
+                (position / 1000 as u64),
+                (position % 1000)
+            );
+
+            // Alert the user if seeking media failed
+            if let Err(error) = self.media_playback.seek(ChannelSeek { channel: channel.clone(), position }) {
+                error!("Unable to seek media on channel {}: {}", channel, error);
+            }
+        }
+
+        // Look through the playlist for state
+        for (channel, playback) in playlist.drain() {
+            // If the state is not playing, change the state
+            if playback.state != PlaybackState::Playing {
+                // for each channel, change the state
+                info!("Changing state on channel {}.", channel);
+
+                // Alert the user if changing the state failed
+                if let Err(error) = self.media_playback.change_state(ChannelState { channel, state: playback.state }) {
+                    error!("Unable to change media state on channel {}: {}", channel, error);
+                }
+            }
+        }
     }
 }
 

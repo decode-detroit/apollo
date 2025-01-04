@@ -65,7 +65,7 @@ struct Apollo;
 impl Apollo {
     /// A function to build the main program and the user interface
     ///
-    fn build_program(application: &gtk::Application, address: Arc<Mutex<String>>) {
+    fn build_program(application: &gtk::Application, address: Arc<Mutex<String>>, server_location: Arc<Mutex<Option<String>>>) {
         // Create the tokio runtime
         let runtime = Runtime::new().expect("Unable To Create Tokio Runtime.");
 
@@ -74,7 +74,7 @@ impl Apollo {
 
         // Launch the system interface to monitor and handle events
         let (system_interface, web_send) =
-            match runtime.block_on(async { SystemInterface::new(interface_send.clone()).await }) {
+            match runtime.block_on(async { SystemInterface::new(interface_send.clone(), address.clone(), server_location).await }) {
                 Ok(result) => result,
                 Err(error) => {
                     // Trace the error
@@ -113,17 +113,27 @@ fn main() {
     // Create the gtk application window. Failure results in immediate panic!
     let application = gtk::Application::new(None, gio::ApplicationFlags::empty());
 
-    // Create the default address and log level
+    // Create the default address and backup server location
     let address = Arc::new(Mutex::new(String::from(DEFAULT_ADDRESS)));
+    let server_location = Arc::new(Mutex::new(None));
 
     // Register command line options
     let addr_clone = address.clone();
+    let server_clone = server_location.clone();
     application.add_main_option(
         "address",
         glib::Char::from(b'a'),
         glib::OptionFlags::NONE,
         glib::OptionArg::String,
         "Optional listening address for the webserver, default is 127.0.0.1:27655",
+        None,
+    );
+    application.add_main_option(
+        "backup",
+        glib::Char::from(b'b'),
+        glib::OptionFlags::NONE,
+        glib::OptionArg::String,
+        "Optional backup server location. If none specified, no live backup performed.",
         None,
     );
     application.add_main_option(
@@ -153,6 +163,25 @@ fn main() {
             if let Ok(mut lock) = addr_clone.try_lock() {
                 // Save the new address (may still be an invalid string)
                 *lock = new_address;
+            }
+        }
+
+        // Check to see if the backup server was specified
+        if dict.contains("backup") {
+            // Try to get the value
+            let variant = dict
+                .lookup_value("backup", None)
+                .expect("Invalid parameter for option 'backup'.");
+
+            // Try to convert it to a string
+            let new_backup: String = variant
+                .get()
+                .expect("Invalid parameter for option 'backup'.");
+
+            // Get a lock on the backup
+            if let Ok(mut lock) = server_clone.try_lock() {
+                // Save the new address (may still be an invalid string)
+                *lock = Some(new_backup);
             }
         }
 
@@ -199,7 +228,7 @@ fn main() {
 
     // Create the program and launch the background thread
     application.connect_startup(move |gtk_app| {
-        Apollo::build_program(gtk_app, address.clone());
+        Apollo::build_program(gtk_app, address.clone(), server_location.clone());
     });
 
     // Connect the activate-specific function (as compared with open-specific function)

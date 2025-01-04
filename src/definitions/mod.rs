@@ -27,9 +27,11 @@ pub const DEFAULT_ADDRESS: &str = "127.0.0.1:27655";
 pub const DEFAULT_LOGLEVEL: Level = Level::WARN;
 
 // Define submodules
+mod backup;
 mod communication;
 mod media;
 
 // Reexport all the definitions from the submodules
+pub use self::backup::*;
 pub use self::communication::*;
 pub use self::media::*;

@@ -135,6 +135,12 @@ If you need to make Apollo available to the open internet, we recommend [Caddy](
 
 In the future, additional options such as changing media to a different channel, swapping channel position, etc., will be added based on our own needs. If you are using Apollo and have a specific feature you need, feel free to send us an email and we'll do our best to make it a priority.
 
+## Realtime Backup
+
+If you would like realtime backup of the media playlist for intant recovery, install a Redis server on your machine. The most up-to-date instructions for installing Redis can be found here: https://redis.io/.
+
+The default configuration should work just fine, and Minerva will update the settings to make sure every change is written to the disk. To connect to the backup server, use the commandline option -b or --backup. The typical server location is redis://127.0.0.1:6379.
+
 ## Raspberry Pi-like Systems (ARM)
 
 It's possible to run Apollo on less-capible systems! For example, a Raspberry Pi 4 can manage audio very well, and plays video acceptably (with a small delay at the start of each).

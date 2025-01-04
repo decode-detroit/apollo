@@ -92,6 +92,10 @@ pub struct MediaChannel {
     pub loop_media: Option<String>, // the media (video or audio) to loop when no other media is playing
 }
 
+/// A type to store a list of media channels
+///
+pub type ChannelList = Vec<MediaChannel>;
+
 /// A helper enum to define the playback state of a channel
 ///
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -131,6 +135,10 @@ pub struct WindowDefinition {
     pub fullscreen: bool,   // a flag to indicate whether the window should be fullscreen
     pub dimensions: Option<(i32, i32)>, // the minimum dimensions of the window
 }
+
+/// A type to store a list of window definitions
+///
+pub type WindowList = Vec<WindowDefinition>;
 
 /// A type to communicate a video stream to the gtk interface
 ///
