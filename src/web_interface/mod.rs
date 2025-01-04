@@ -158,12 +158,12 @@ impl WebInterface {
             .and(WebInterface::with_json::<ChannelSeek>())
             .and_then(WebInterface::handle_request);
 
-        // Create the quit filter
-        let quit = warp::post()
-            .and(warp::path("quit"))
+        // Create the close filter
+        let close = warp::post()
+            .and(warp::path("close"))
             .and(warp::path::end())
             .and(WebInterface::with_clone(self.web_send.clone()))
-            .and(WebInterface::with_clone(Request::Quit))
+            .and(WebInterface::with_clone(Request::Close))
             .and_then(WebInterface::handle_request);
 
         // Combine the filters
@@ -175,7 +175,7 @@ impl WebInterface {
             .or(change_state)
             .or(resize_channel)
             .or(seek)
-            .or(quit);
+            .or(close);
 
         // Try to extract the user defined address
         let mut address = DEFAULT_ADDRESS.to_string();

@@ -65,7 +65,11 @@ struct Apollo;
 impl Apollo {
     /// A function to build the main program and the user interface
     ///
-    fn build_program(application: &gtk::Application, address: Arc<Mutex<String>>, server_location: Arc<Mutex<Option<String>>>) {
+    fn build_program(
+        application: &gtk::Application,
+        address: Arc<Mutex<String>>,
+        server_location: Arc<Mutex<Option<String>>>,
+    ) {
         // Create the tokio runtime
         let runtime = Runtime::new().expect("Unable To Create Tokio Runtime.");
 
@@ -73,17 +77,18 @@ impl Apollo {
         let (interface_send, gtk_interface_recv) = InterfaceSend::new();
 
         // Launch the system interface to monitor and handle events
-        let (system_interface, web_send) =
-            match runtime.block_on(async { SystemInterface::new(interface_send.clone(), address.clone(), server_location).await }) {
-                Ok(result) => result,
-                Err(error) => {
-                    // Trace the error
-                    error!("{}", error);
+        let (system_interface, web_send) = match runtime.block_on(async {
+            SystemInterface::new(interface_send.clone(), address.clone(), server_location).await
+        }) {
+            Ok(result) => result,
+            Err(error) => {
+                // Trace the error
+                error!("{}", error);
 
-                    // Panic and exit
-                    panic!("Unable to create System Interface: {}", error);
-                }
-            };
+                // Panic and exit
+                panic!("Unable to create System Interface: {}", error);
+            }
+        };
 
         // Create a new web interface
         let mut web_interface = WebInterface::new(web_send, address);

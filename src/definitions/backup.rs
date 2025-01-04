@@ -31,14 +31,14 @@ use fnv::FnvHashMap;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MediaPlayback {
     pub media_cue: MediaCue,  // the media information that was cued
-    pub seek_to: Duration, // the last known position of the media
+    pub seek_to: Duration,    // the last known position of the media
     pub state: PlaybackState, // the current state of the media
 }
 
 /// Implement time updates for the MediaPlayback
 impl MediaPlayback {
     /// A method to add time to the current position of the media
-    /// 
+    ///
     pub fn update(&mut self, additional_time: Duration) {
         self.seek_to = self
             .seek_to
@@ -49,4 +49,3 @@ impl MediaPlayback {
 
 /// A structure to store the media playbacks in a playlist
 pub type MediaPlaylist = FnvHashMap<u32, MediaPlayback>;
-

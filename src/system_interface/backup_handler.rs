@@ -68,7 +68,11 @@ impl BackupHandler {
     /// gracefully by notifying of any errors on the update line and returning
     /// None.
     ///
-    pub async fn new(address: String, server_location: Option<String>, interface_send: InterfaceSend) -> Self {
+    pub async fn new(
+        address: String,
+        server_location: Option<String>,
+        interface_send: InterfaceSend,
+    ) -> Self {
         // If a server location was specified
         if let Some(location) = server_location {
             // Try to connect to the Redis server
@@ -135,9 +139,7 @@ impl BackupHandler {
         // If the redis connection exists
         if let Some(mut connection) = self.connection.take() {
             // Add the cue to the window list
-            self.window_list.push(
-                window_definition,
-            );
+            self.window_list.push(window_definition);
 
             // Try to serialize the window_list
             let window_string = match serde_yaml::to_string(&self.window_list) {
@@ -152,7 +154,8 @@ impl BackupHandler {
             };
 
             // Try to copy the data to the server
-            let result: RedisResult<bool> = connection.set(&format!("apollo:{}:windows", self.address), &window_string);
+            let result: RedisResult<bool> =
+                connection.set(&format!("apollo:{}:windows", self.address), &window_string);
 
             // Alert that the window list was not set
             if let Err(..) = result {
@@ -175,9 +178,7 @@ impl BackupHandler {
         // If the redis connection exists
         if let Some(mut connection) = self.connection.take() {
             // Add the channel to the channel list
-            self.channel_list.push(
-                media_channel,
-            );
+            self.channel_list.push(media_channel);
 
             // Try to serialize the channel list
             let channel_string = match serde_yaml::to_string(&self.channel_list) {
@@ -192,7 +193,10 @@ impl BackupHandler {
             };
 
             // Try to copy the data to the server
-            let result: RedisResult<bool> = connection.set(&format!("apollo:{}:channels", self.address), &channel_string);
+            let result: RedisResult<bool> = connection.set(
+                &format!("apollo:{}:channels", self.address),
+                &channel_string,
+            );
 
             // Alert that the channel list was not set
             if let Err(..) = result {
@@ -222,7 +226,10 @@ impl BackupHandler {
                     let mut frame = match channel.video_frame.clone() {
                         Some(frame) => frame,
                         None => {
-                            error!("Unable to backup realign: channel {} doesn't have existing frame.", new_alignment.channel);
+                            error!(
+                                "Unable to backup realign: channel {} doesn't have existing frame.",
+                                new_alignment.channel
+                            );
 
                             // Put the connection back
                             self.connection = Some(connection);
@@ -256,7 +263,10 @@ impl BackupHandler {
             };
 
             // Try to copy the data to the server
-            let result: RedisResult<bool> = connection.set(&format!("apollo:{}:channels", self.address), &channel_string);
+            let result: RedisResult<bool> = connection.set(
+                &format!("apollo:{}:channels", self.address),
+                &channel_string,
+            );
 
             // Alert that the channel list was not set
             if let Err(..) = result {
@@ -286,7 +296,10 @@ impl BackupHandler {
                     let old_frame = match channel.video_frame.clone() {
                         Some(frame) => frame,
                         None => {
-                            error!("Unable to backup resize: channel {} doesn't have existing frame.", new_size.channel);
+                            error!(
+                                "Unable to backup resize: channel {} doesn't have existing frame.",
+                                new_size.channel
+                            );
 
                             // Put the connection back
                             self.connection = Some(connection);
@@ -321,7 +334,10 @@ impl BackupHandler {
             };
 
             // Try to copy the data to the server
-            let result: RedisResult<bool> = connection.set(&format!("apollo:{}:channels", self.address), &channel_string);
+            let result: RedisResult<bool> = connection.set(
+                &format!("apollo:{}:channels", self.address),
+                &channel_string,
+            );
 
             // Alert that the channel list was not set
             if let Err(..) = result {
@@ -382,7 +398,8 @@ impl BackupHandler {
             };
 
             // Try to copy the data to the server
-            let result: RedisResult<bool> = connection.set(&format!("apollo:{}:media", self.address), &media_string);
+            let result: RedisResult<bool> =
+                connection.set(&format!("apollo:{}:media", self.address), &media_string);
 
             // Alert that the media playlist was not set
             if let Err(..) = result {
@@ -411,10 +428,13 @@ impl BackupHandler {
             if let Some(media) = self.media_playlist.get_mut(&new_state.channel) {
                 // Upate the media
                 media.state = new_state.state;
-            
+
             // Otherwise, warn the media wasn't found
             } else {
-                error!("Unable to backup media state: channel {} not defined.", new_state.channel);
+                error!(
+                    "Unable to backup media state: channel {} not defined.",
+                    new_state.channel
+                );
 
                 // Put the connection back
                 self.connection = Some(connection);
@@ -434,7 +454,8 @@ impl BackupHandler {
             };
 
             // Try to copy the data to the server
-            let result: RedisResult<bool> = connection.set(&format!("apollo:{}:media", self.address), &media_string);
+            let result: RedisResult<bool> =
+                connection.set(&format!("apollo:{}:media", self.address), &media_string);
 
             // Alert that the media playlist was not set
             if let Err(..) = result {
@@ -458,15 +479,18 @@ impl BackupHandler {
         if let Some(mut connection) = self.connection.take() {
             // Update the media seek positions
             self.update_media();
-            
+
             // Try to find the current media
             if let Some(media) = self.media_playlist.get_mut(&new_seek.channel) {
                 // Upate the media seek location
                 media.seek_to = Duration::from_millis(new_seek.position);
-            
+
             // Otherwise, warn the media wasn't found
             } else {
-                error!("Unable to backup media state: channel {} not defined.", new_seek.channel);
+                error!(
+                    "Unable to backup media state: channel {} not defined.",
+                    new_seek.channel
+                );
 
                 // Put the connection back
                 self.connection = Some(connection);
@@ -486,7 +510,8 @@ impl BackupHandler {
             };
 
             // Try to copy the data to the server
-            let result: RedisResult<bool> = connection.set(&format!("apollo:{}:media", self.address), &media_string);
+            let result: RedisResult<bool> =
+                connection.set(&format!("apollo:{}:media", self.address), &media_string);
 
             // Alert that the media playlist was not set
             if let Err(..) = result {
@@ -506,17 +531,12 @@ impl BackupHandler {
     /// This function will raise an error if it is unable to connect to the
     /// Redis server.
     ///
-    pub fn reload_backup(
-        &mut self,
-    ) -> Option<(
-        WindowList,
-        ChannelList,
-        MediaPlaylist,
-    )> {
+    pub fn reload_backup(&mut self) -> Option<(WindowList, ChannelList, MediaPlaylist)> {
         // If the redis connection exists
         if let Some(mut connection) = self.connection.take() {
             // Check to see if there is a media playlist
-            let result: RedisResult<String> = connection.get(&format!("apollo:{}:media", self.address));
+            let result: RedisResult<String> =
+                connection.get(&format!("apollo:{}:media", self.address));
 
             // If something was received
             if let Ok(media_string) = result {
@@ -568,11 +588,7 @@ impl BackupHandler {
                 self.connection = Some(connection);
 
                 // Return all the media information
-                return Some((
-                    window_list,
-                    channel_list,
-                    media_playlist,
-                ));
+                return Some((window_list, channel_list, media_playlist));
             }
 
             // Put the connection back
@@ -621,7 +637,7 @@ impl Drop for BackupHandler {
         }
 
         // Close the GTK program and video windows
-        self.interface_send.send(InterfaceUpdate::Quit);
+        self.interface_send.send(InterfaceUpdate::Close);
     }
 }
 
@@ -681,16 +697,15 @@ mod tests {
             .await;
 
         // Reload the backup
-        if let Some((window_list, channel_list, media_playlist)) =
-            backup_handler.reload_backup()
-        {
+        if let Some((window_list, channel_list, media_playlist)) = backup_handler.reload_backup() {
             assert_eq!(
                 WindowDefinition {
                     window_number: 1,
                     fullscreen: true,
                     dimensions: None,
                 },
-                window_list[0]);
+                window_list[0]
+            );
             assert_eq!(
                 MediaChannel {
                     channel: 1,
@@ -698,7 +713,8 @@ mod tests {
                     audio_device: None,
                     loop_media: None,
                 },
-                channel_list[0]);
+                channel_list[0]
+            );
             assert_eq!(
                 MediaCue {
                     channel: 1,

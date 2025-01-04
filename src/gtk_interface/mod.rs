@@ -136,7 +136,7 @@ impl GtkInterface {
                 }
 
                 // Clear all the video channels and exit
-                InterfaceUpdate::Quit => {
+                InterfaceUpdate::Close => {
                     // Otherwise, destroy the video window
                     video_window.clear_all();
                     unsafe {

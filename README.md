@@ -126,7 +126,7 @@ curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "position":
 And mercifully
 ```
 curl -H "Content-Type: application/json" -X POST -d '{ "channel": 1, "state": "paused"}' http://localhost:27655/changeState
-curl -H "Content-Type: application/json" -X POST http://localhost:27655/quit
+curl -H "Content-Type: application/json" -X POST http://localhost:27655/close
 ```
 
 The port number (and listening location) can be adjusted with the '-a' or '--address' commandline option, and log level can be set via the '-l' or '--logLevel' option. Log levels are Trace, Info, Debug, Warn, Error (listed in decreasing level of verbosity).

@@ -103,8 +103,8 @@ pub enum Request {
     /// A variant to seek within the media of a channel
     Seek { channel_seek: ChannelSeek },
 
-    /// A variant to quit the program
-    Quit,
+    /// A variant to close the program and unload all the data
+    Close,
 }
 
 /// A type to cover all web replies
@@ -173,7 +173,7 @@ pub enum InterfaceUpdate {
     },
 
     /// A variant to close all the windows and exit
-    Quit,
+    Close,
 }
 
 /// The stucture and methods to send updates to the user interface.

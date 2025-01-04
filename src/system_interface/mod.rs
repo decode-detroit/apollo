@@ -27,8 +27,8 @@ mod media_playback;
 use crate::definitions::*;
 
 // Import submodute definitions
-use media_playback::MediaPlayback;
 use backup_handler::BackupHandler;
+use media_playback::MediaPlayback;
 
 // Import standard library features
 use std::sync::{Arc, Mutex};
@@ -42,7 +42,7 @@ use tokio::time::sleep;
 use fnv::FnvHashSet;
 
 // Import tracing features
-use tracing::{info, error};
+use tracing::{error, info};
 
 // Import anyhow features
 use anyhow::Result;
@@ -55,14 +55,18 @@ pub struct SystemInterface {
     web_receive: mpsc::Receiver<WebRequest>, // the receiving line for web requests
     media_playback: MediaPlayback, // the structure for controlling media playback
     backup_handler: BackupHandler, // the structure for managing the live system backup
-    windows: FnvHashSet<u32>,  // a set of already-defined windows (to avoid duplication)
+    windows: FnvHashSet<u32>,      // a set of already-defined windows (to avoid duplication)
 }
 
 // Implement key SystemInterface functionality
 impl SystemInterface {
     /// A function to create a new, blank instance of the system interface.
     ///
-    pub async fn new(interface_send: InterfaceSend, user_address: Arc<Mutex<String>>, user_server_location: Arc<Mutex<Option<String>>>) -> Result<(Self, WebSend)> {
+    pub async fn new(
+        interface_send: InterfaceSend,
+        user_address: Arc<Mutex<String>>,
+        user_server_location: Arc<Mutex<Option<String>>>,
+    ) -> Result<(Self, WebSend)> {
         // Create the web send for the web interface
         let (web_send, web_receive) = WebSend::new();
 
@@ -84,7 +88,8 @@ impl SystemInterface {
         }
 
         // Initialize the backup handler
-        let backup_handler = BackupHandler::new(address, server_location, interface_send.clone()).await;
+        let backup_handler =
+            BackupHandler::new(address, server_location, interface_send.clone()).await;
 
         // Create the new system interface instance
         let sys_interface = SystemInterface {
@@ -136,7 +141,7 @@ impl SystemInterface {
 
                     // If defining a new window
                     Request::DefineWindow { window } => {
-                        // If the window isn't already defined, insert it
+                        // If the window isn't already defined, add it
                         if self.windows.insert(window.window_number) {
                             // Send the window definition to the gtk interface
                             self.interface_send.send(InterfaceUpdate::Window { window: window.clone() });
@@ -146,10 +151,10 @@ impl SystemInterface {
 
                             // Reply success to the web interface
                             request.reply_to.send(WebReply::success()).unwrap_or(());
-                        
+
                         // Trace the error and reply with the error
                         } else {
-                            error!("Window was already defined.");
+                            error!("Window is already defined.");
                             request.reply_to.send(WebReply::failure(format!("Window was already defined."))).unwrap_or(());
                         }
                     }
@@ -194,7 +199,7 @@ impl SystemInterface {
                         } else {
                             // Backup the media
                             self.backup_handler.backup_media(media_cue).await;
-                            
+
                             // Indicate success
                             request.reply_to.send(WebReply::success()).unwrap_or(());
                         }
@@ -248,8 +253,8 @@ impl SystemInterface {
                         }
                     }
 
-                    // If quitting the program
-                    Request::Quit => {
+                    // If closing the program
+                    Request::Close => {
                         // End the loop
                         return false;
                     }
@@ -263,7 +268,7 @@ impl SystemInterface {
 
     /// A method to run an infinite number of interations of the system
     /// interface to update the underlying system of any media changes.
-    /// 
+    ///
     /// At startup, this loop looks for any exsting backup data and loads
     /// that data, if it's found. Media stored remotely may load too slowly
     /// to be resumed correctly.
@@ -273,10 +278,16 @@ impl SystemInterface {
     ///
     pub async fn run(mut self) {
         // Check for an existing backup
-        if let Some((mut window_list, mut channel_list, media_playlist)) = self.backup_handler.reload_backup() {
+        if let Some((mut window_list, mut channel_list, media_playlist)) =
+            self.backup_handler.reload_backup()
+        {
             // Reload the window list (reloaded in the order they were defined)
             for window in window_list.drain(..) {
-                self.interface_send.send(InterfaceUpdate::Window { window: window });
+                // If the window isn't already defined, add it
+                if self.windows.insert(window.window_number) {
+                    self.interface_send
+                        .send(InterfaceUpdate::Window { window: window });
+                }
             }
 
             // Reload the channel list (reloaded in the order they were defined)
@@ -286,7 +297,8 @@ impl SystemInterface {
                     // If a stream was created
                     if let Some(video_stream) = possible_stream {
                         // Pass the new video stream to the gtk interface
-                        self.interface_send.send(InterfaceUpdate::Video { video_stream });
+                        self.interface_send
+                            .send(InterfaceUpdate::Video { video_stream });
                     }
                 }
             }
@@ -294,7 +306,7 @@ impl SystemInterface {
             // Reload the media playlist, one for each channel
             self.restore_playlist(media_playlist).await;
         }
-        
+
         // Loop the structure indefinitely
         loop {
             // Repeat endlessly until run_once reaches close
@@ -310,7 +322,7 @@ impl SystemInterface {
         for (channel, playback) in playlist.iter() {
             // For each channel, cue the media
             info!("Playing media on channel {}.", channel);
-            
+
             // Alert the user if the media failed to play
             if let Err(error) = self.media_playback.cue_media(playback.media_cue.clone()) {
                 error!("Unable to restart media on channel {}: {}", channel, error);
@@ -333,7 +345,10 @@ impl SystemInterface {
             );
 
             // Alert the user if seeking media failed
-            if let Err(error) = self.media_playback.seek(ChannelSeek { channel: channel.clone(), position }) {
+            if let Err(error) = self.media_playback.seek(ChannelSeek {
+                channel: channel.clone(),
+                position,
+            }) {
                 error!("Unable to seek media on channel {}: {}", channel, error);
             }
         }
@@ -346,8 +361,14 @@ impl SystemInterface {
                 info!("Changing state on channel {}.", channel);
 
                 // Alert the user if changing the state failed
-                if let Err(error) = self.media_playback.change_state(ChannelState { channel, state: playback.state }) {
-                    error!("Unable to change media state on channel {}: {}", channel, error);
+                if let Err(error) = self.media_playback.change_state(ChannelState {
+                    channel,
+                    state: playback.state,
+                }) {
+                    error!(
+                        "Unable to change media state on channel {}: {}",
+                        channel, error
+                    );
                 }
             }
         }
