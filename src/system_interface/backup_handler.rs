@@ -537,7 +537,7 @@ impl BackupHandler {
             // If something was received
             if let Ok(media_string) = result {
                 // Warn that existing data was found
-                warn!("Detected lingering backup data. Reloading ...");
+                warn!("Apollo detected lingering backup data. Reloading ...");
 
                 // Try to parse the data
                 let mut media_playlist = MediaPlaylist::default();
