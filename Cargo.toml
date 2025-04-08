@@ -22,7 +22,7 @@ glib = "0.18"
 cairo-rs = "^0"
 gstreamer = "0.21"
 gstreamer-video = "^0"
-tokio = { version = "1.33", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.43", features = ["macros", "rt-multi-thread"] }
 warp = "0.3"
 async-stream = "0.3"
 futures-util = "0.3"
