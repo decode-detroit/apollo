@@ -4,7 +4,7 @@ version = "1.0.0"
 authors = ["Patton Doyle <patton@DecodeDetroit.com>"]
 description = "Realtime Remote-Controlled Multimedia Player"
 license = "GPL-3.0-or-later"
-edition="2021"
+edition="2024"
 
 [profile.release]
 lto = true

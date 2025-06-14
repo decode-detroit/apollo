@@ -168,7 +168,7 @@ impl VideoWindow {
                 // Check if we're using X11
                 if display_type == "GdkX11Display" {
                     // Connect to the get_xid function
-                    extern "C" {
+                    unsafe extern "C" {
                         pub fn gdk_x11_window_get_xid(
                             window: *mut glib::object::Object,
                         ) -> *mut c_void;
