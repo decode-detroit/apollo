@@ -12,7 +12,7 @@ lto = true
 [dependencies]
 fnv = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.9"
+serde_yaml = "0.9.34-deprecated"
 serde_json = "1.0"
 gtk = "0.18"
 gdk = "0.18"
@@ -22,8 +22,8 @@ glib = "0.18"
 cairo-rs = "^0"
 gstreamer = "0.21"
 gstreamer-video = "^0"
-tokio = { version = "1.45", features = ["macros", "rt-multi-thread"] }
-warp = "0.3"
+tokio = { version = "1.48", features = ["macros", "rt-multi-thread"] }
+warp = { version = "0.4", features = ["server"] }
 async-stream = "0.3"
 futures-util = "0.3"
 tracing = "0.1"
