@@ -25,7 +25,7 @@ use crate::definitions::*;
 use tokio::sync::{mpsc, oneshot};
 
 // Import standard library features
-use std::sync::{mpsc as std_mpsc, Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc as std_mpsc};
 
 /// The stucture and methods to send WebRequests to the system interface
 ///

@@ -26,7 +26,7 @@ use std::sync::{Arc, Mutex};
 
 // Import Tokio and warp features
 use tokio::sync::oneshot;
-use warp::{http, Filter};
+use warp::{Filter, http};
 
 // Import serde feaures
 use serde::de::DeserializeOwned;

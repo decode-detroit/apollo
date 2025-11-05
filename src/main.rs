@@ -44,7 +44,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 // Import tracing features
-use tracing::{error, Level};
+use tracing::{Level, error};
 
 // Import anyhow macro
 #[macro_use]
