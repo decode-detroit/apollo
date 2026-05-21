@@ -37,6 +37,7 @@ use std::time::Duration;
 // Import Tokio features
 use tokio::sync::{mpsc, Mutex as TokioMutex};
 use tokio::time::{interval, sleep};
+use tokio::task::JoinHandle;
 
 // Import FNV HashSet
 use fnv::FnvHashSet;
@@ -47,8 +48,9 @@ use tracing::{error, info};
 // Import anyhow features
 use anyhow::Result;
 
-// Define timing constant
-pub const MEDIA_UPDATE_INTERVAL: u64 = 10; // the maximum gap between media updates, in seconds
+// Define timing constants
+const MEDIA_UPDATE_INTERVAL: u64 = 10; // the maximum gap between media seek updates, in seconds
+const RELOAD_SEEK_DELAY: u64 = 1000; // the amount of time to wait for media to begin before seeking to position, in milliseconds
 
 /// A structure to contain the system interface and handle all updates to the
 /// to the interface.
@@ -58,7 +60,8 @@ pub struct SystemInterface {
     web_receive: mpsc::Receiver<WebRequest>, // the receiving line for web requests
     media_playback: MediaPlayback, // the structure for controlling media playback
     backup_handler: Arc<TokioMutex<BackupHandler>>, // the structure for managing the live system backup
-    windows: FnvHashSet<u32>,      // a set of already-defined windows (to avoid duplication)
+    backup_timer: JoinHandle<()>, // process handle to allow for quick cancelling of the backup tick
+    windows: FnvHashSet<u32>,  // a set of already-defined windows (to avoid duplication)
 }
 
 // Implement key SystemInterface functionality
@@ -96,7 +99,7 @@ impl SystemInterface {
 
         // Set regular updates for the backup handler
         let backup_clone = backup_handler.clone();
-        tokio::spawn(async move {
+        let backup_timer = tokio::spawn(async move {
             // Create the update interval
             let mut interval = interval(Duration::from_secs(MEDIA_UPDATE_INTERVAL));
     
@@ -119,6 +122,7 @@ impl SystemInterface {
             web_receive,
             media_playback,
             backup_handler,
+            backup_timer,
             windows: FnvHashSet::default(),
         };
 
@@ -277,6 +281,9 @@ impl SystemInterface {
 
                     // If closing the program
                     Request::Close => {
+                        // Indicate success
+                        request.reply_to.send(WebReply::success()).unwrap_or(());
+
                         // End the loop
                         return false;
                     }
@@ -353,13 +360,12 @@ impl SystemInterface {
         }
 
         // Wait for all the media to start playing and count the delay
-        sleep(Duration::from_millis(500)).await;
-        let delay_millis: u64 = 500; // the delay above
+        sleep(Duration::from_millis(RELOAD_SEEK_DELAY)).await;
 
         // Look through the playlist for seek position
         for (channel, playback) in playlist.iter() {
             // Calculate the new seek position
-            let position = playback.seek_to.as_millis() as u64 + delay_millis; // compensate for our additional delays
+            let position = playback.seek_to.as_millis() as u64 + RELOAD_SEEK_DELAY; // compensate for our additional delays
             info!(
                 "Seeking channel {} to {}.{:0>3}.",
                 channel,
@@ -395,5 +401,21 @@ impl SystemInterface {
                 }
             }
         }
+    }
+}
+
+
+// Implement the drop trait for the system interface struct.
+impl Drop for SystemInterface {
+    /// This method cancels the lingering system process.
+    ///
+    /// # Errors
+    ///
+    /// This method will ignore any errors as it is called only when the system
+    /// connection is being closed.
+    ///
+    fn drop(&mut self) {
+        // Abort the backup timer task
+        self.backup_timer.abort();
     }
 }

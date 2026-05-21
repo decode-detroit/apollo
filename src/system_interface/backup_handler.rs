@@ -354,7 +354,7 @@ impl BackupHandler {
     /// method does not verify the validity of the media cue values in any way.
     /// It is expected that the calling module will perform this check.
     ///
-    /// The media interface only waits half a second for media to load before
+    /// The media interface only waits <RELOAD_SEEK_DELAY> for media to load before
     /// seeking to the corrent position of the media. This delay may not be
     /// sufficient for network-loaded media which can take several seconds
     /// to load. If the media takes too long to load, the media with resume
@@ -451,9 +451,8 @@ impl BackupHandler {
         self.update_media();
     }
 
-    /// A method to advance the media seek positions
-    /// and backup the new positions to the server
-    /// as well as any other new data.
+    /// A method to advance the media seek positions and backup the new positions
+    /// as well as any other new data to the backup server.
     /// 
     /// # Errors
     ///
