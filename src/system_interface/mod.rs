@@ -35,8 +35,8 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 // Import Tokio features
-use tokio::sync::mpsc;
-use tokio::time::sleep;
+use tokio::sync::{mpsc, Mutex as TokioMutex};
+use tokio::time::{interval, sleep};
 
 // Import FNV HashSet
 use fnv::FnvHashSet;
@@ -47,6 +47,9 @@ use tracing::{error, info};
 // Import anyhow features
 use anyhow::Result;
 
+// Define timing constant
+pub const MEDIA_UPDATE_INTERVAL: u64 = 10; // the maximum gap between media updates, in seconds
+
 /// A structure to contain the system interface and handle all updates to the
 /// to the interface.
 ///
@@ -54,7 +57,7 @@ pub struct SystemInterface {
     interface_send: InterfaceSend, // a sending line to pass interface updates
     web_receive: mpsc::Receiver<WebRequest>, // the receiving line for web requests
     media_playback: MediaPlayback, // the structure for controlling media playback
-    backup_handler: BackupHandler, // the structure for managing the live system backup
+    backup_handler: Arc<TokioMutex<BackupHandler>>, // the structure for managing the live system backup
     windows: FnvHashSet<u32>,      // a set of already-defined windows (to avoid duplication)
 }
 
@@ -89,7 +92,26 @@ impl SystemInterface {
 
         // Initialize the backup handler
         let backup_handler =
-            BackupHandler::new(address, server_location, interface_send.clone()).await;
+            Arc::new(TokioMutex::new(BackupHandler::new(address, server_location, interface_send.clone()).await));
+
+        // Set regular updates for the backup handler
+        let backup_clone = backup_handler.clone();
+        tokio::spawn(async move {
+            // Create the update interval
+            let mut interval = interval(Duration::from_secs(MEDIA_UPDATE_INTERVAL));
+    
+            // Loop forever until the program closes
+            loop {
+                // Wait the designated interval
+                interval.tick().await;
+
+                // Attempt to update; abandon if the lock is held elsewhere
+                if let Ok(mut lock) = backup_clone.try_lock() {
+                    // Update the seek positions for all media
+                    lock.update_media();
+                }
+            }
+        });
 
         // Create the new system interface instance
         let sys_interface = SystemInterface {
@@ -119,7 +141,7 @@ impl SystemInterface {
                         self.interface_send.send(InterfaceUpdate::Align { channel_realignment: channel_realignment.clone()});
 
                         // Backup the change to the channel
-                        self.backup_handler.backup_channel_align(channel_realignment).await;
+                        self.backup_handler.lock().await.backup_channel_align(channel_realignment).await;
 
                         // Reply success to the web interface
                         request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -147,7 +169,7 @@ impl SystemInterface {
                             self.interface_send.send(InterfaceUpdate::Window { window: window.clone() });
 
                             // Backup the window definition
-                            self.backup_handler.backup_window(window).await;
+                            self.backup_handler.lock().await.backup_window(window).await;
 
                             // Reply success to the web interface
                             request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -172,7 +194,7 @@ impl SystemInterface {
                                 }
 
                                 // Backup the window definition
-                                self.backup_handler.backup_channel(media_channel).await;
+                                self.backup_handler.lock().await.backup_channel(media_channel).await;
 
                                 // Reply success to the web interface
                                 request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -198,7 +220,7 @@ impl SystemInterface {
                         // Otherwise, backup the media and indicate success
                         } else {
                             // Backup the media
-                            self.backup_handler.backup_media(media_cue).await;
+                            self.backup_handler.lock().await.backup_media(media_cue).await;
 
                             // Indicate success
                             request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -216,7 +238,7 @@ impl SystemInterface {
                         // Otherwise, backup the change and indicate success
                         } else {
                             // Backup the change
-                            self.backup_handler.backup_media_state(channel_state).await;
+                            self.backup_handler.lock().await.backup_media_state(channel_state).await;
 
                             // Indicate success
                             request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -229,7 +251,7 @@ impl SystemInterface {
                         self.interface_send.send(InterfaceUpdate::Resize { channel_allocation: channel_allocation.clone() });
 
                         // Backup the change to the channel
-                        self.backup_handler.backup_channel_resize(channel_allocation).await;
+                        self.backup_handler.lock().await.backup_channel_resize(channel_allocation).await;
 
                         // Reply success to the web interface
                         request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -246,7 +268,7 @@ impl SystemInterface {
                         // Otherwise, backup the seek and indicate success
                         } else {
                             // Backup the change
-                            self.backup_handler.backup_media_seek(channel_seek).await;
+                            self.backup_handler.lock().await.backup_media_seek(channel_seek).await;
 
                             // Indicate success
                             request.reply_to.send(WebReply::success()).unwrap_or(());
@@ -278,9 +300,10 @@ impl SystemInterface {
     ///
     pub async fn run(mut self) {
         // Check for an existing backup
-        if let Some((mut window_list, mut channel_list, media_playlist)) =
-            self.backup_handler.reload_backup()
-        {
+        let possible_backup = self.backup_handler.lock().await.reload_backup();
+
+        // If a backup was found
+        if let Some((mut window_list, mut channel_list, media_playlist)) = possible_backup {
             // Reload the window list (reloaded in the order they were defined)
             for window in window_list.drain(..) {
                 // If the window isn't already defined, add it

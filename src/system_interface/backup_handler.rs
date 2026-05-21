@@ -367,7 +367,7 @@ impl BackupHandler {
     ///
     pub async fn backup_media(&mut self, media_cue: MediaCue) {
         // If the redis connection exists
-        if let Some(mut connection) = self.connection.take() {
+        if let Some(connection) = self.connection.take() {
             // Update the media seek positions
             self.update_media();
 
@@ -381,30 +381,12 @@ impl BackupHandler {
                 },
             ); // replaces an existing media playback, if it exists
 
-            // Try to serialize the media playlist
-            let media_string = match serde_yaml::to_string(&self.media_playlist) {
-                Ok(string) => string,
-                Err(error) => {
-                    error!("Unable to parse media playlist: {}.", error);
-
-                    // Put the connection back
-                    self.connection = Some(connection);
-                    return;
-                }
-            };
-
-            // Try to copy the data to the server
-            let result: RedisResult<bool> =
-                connection.set(&format!("apollo:{}:media", self.address), &media_string);
-
-            // Alert that the media playlist was not set
-            if let Err(..) = result {
-                error!("Unable to backup media onto backup server.");
-            }
-
             // Put the connection back
             self.connection = Some(connection);
         }
+
+        // Update the seek positions and save the changes
+        self.update_media();
     }
 
     /// A method to backup the state of media to the backup server.
@@ -416,10 +398,7 @@ impl BackupHandler {
     ///
     pub async fn backup_media_state(&mut self, new_state: ChannelState) {
         // If the redis connection exists
-        if let Some(mut connection) = self.connection.take() {
-            // Update the media seek positions
-            self.update_media();
-
+        if let Some(connection) = self.connection.take() {
             // Try to find the current media
             if let Some(media) = self.media_playlist.get_mut(&new_state.channel) {
                 // Upate the media
@@ -431,36 +410,14 @@ impl BackupHandler {
                     "Unable to backup media state: channel {} not defined.",
                     new_state.channel
                 );
-
-                // Put the connection back
-                self.connection = Some(connection);
-                return;
-            }
-
-            // Try to serialize the media playlist
-            let media_string = match serde_yaml::to_string(&self.media_playlist) {
-                Ok(string) => string,
-                Err(error) => {
-                    error!("Unable to parse media playlist: {}.", error);
-
-                    // Put the connection back
-                    self.connection = Some(connection);
-                    return;
-                }
-            };
-
-            // Try to copy the data to the server
-            let result: RedisResult<bool> =
-                connection.set(&format!("apollo:{}:media", self.address), &media_string);
-
-            // Alert that the media playlist was not set
-            if let Err(..) = result {
-                error!("Unable to backup media onto backup server.");
             }
 
             // Put the connection back
             self.connection = Some(connection);
         }
+
+        // Update the seek positions and save the changes
+        self.update_media();
     }
 
     /// A method to backup the seek position of media to the backup server.
@@ -472,10 +429,7 @@ impl BackupHandler {
     ///
     pub async fn backup_media_seek(&mut self, new_seek: ChannelSeek) {
         // If the redis connection exists
-        if let Some(mut connection) = self.connection.take() {
-            // Update the media seek positions
-            self.update_media();
-
+        if let Some(connection) = self.connection.take() {
             // Try to find the current media
             if let Some(media) = self.media_playlist.get_mut(&new_seek.channel) {
                 // Upate the media seek location
@@ -487,11 +441,35 @@ impl BackupHandler {
                     "Unable to backup media state: channel {} not defined.",
                     new_seek.channel
                 );
-
-                // Put the connection back
-                self.connection = Some(connection);
-                return;
             }
+
+            // Put the connection back
+            self.connection = Some(connection);
+        }
+
+        // Update the seek positions and save the changes
+        self.update_media();
+    }
+
+    /// A method to advance the media seek positions
+    /// and backup the new positions to the server
+    /// as well as any other new data.
+    /// 
+    /// # Errors
+    ///
+    /// This function will raise an error if it is unable to connect to the
+    /// Redis server.
+    ///
+    pub fn update_media(&mut self) {
+        // If the redis connection exists
+        if let Some(mut connection) = self.connection.take() {
+            // Advance the seek position of all the currently playing media
+            for media in self.media_playlist.values_mut() {
+                media.update(self.last_media_update.elapsed());
+            }
+
+            // Save the new update time
+            self.last_media_update = Instant::now();
 
             // Try to serialize the media playlist
             let media_string = match serde_yaml::to_string(&self.media_playlist) {
@@ -593,20 +571,6 @@ impl BackupHandler {
 
         // Silently return nothing if the connection does not exist or there was not any data
         None
-    }
-
-    /// A helper function to advance the media seek positions.
-    /// This function can be called any time, but it is only useful
-    /// if the media playlist is subsequently backed up.
-    ///
-    fn update_media(&mut self) {
-        // Advance the seek position of all the currently playing media
-        for media in self.media_playlist.values_mut() {
-            media.update(self.last_media_update.elapsed());
-        }
-
-        // Save the new update time
-        self.last_media_update = Instant::now();
     }
 }
 
