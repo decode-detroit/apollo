@@ -127,7 +127,7 @@ fn main() {
     let server_clone = server_location.clone();
     application.add_main_option(
         "version",
-        glib::Char::from(b'v'),
+        glib::Char::from(b'V'),
         glib::OptionFlags::NONE,
         glib::OptionArg::None,
         "Show current Apollo version",
@@ -163,7 +163,7 @@ fn main() {
         // Check to see if version was requested
         if dict.contains("version") {
             // Print the version number
-            println!("Apollo {}", env!("CARGO_PKG_VERSION"));
+            println!("apollo {}", env!("CARGO_PKG_VERSION"));
         }
 
         // Check to see if port was specified
