@@ -126,6 +126,14 @@ fn main() {
     let addr_clone = address.clone();
     let server_clone = server_location.clone();
     application.add_main_option(
+        "version",
+        glib::Char::from(b'v'),
+        glib::OptionFlags::NONE,
+        glib::OptionArg::None,
+        "Show current Apollo version",
+        None,
+    );
+    application.add_main_option(
         "address",
         glib::Char::from(b'a'),
         glib::OptionFlags::NONE,
@@ -152,6 +160,12 @@ fn main() {
 
     // Handle command line options
     application.connect_handle_local_options(move |_, dict| {
+        // Check to see if version was requested
+        if dict.contains("version") {
+            // Print the version number
+            println!("Apollo {}", env!("CARGO_PKG_VERSION"));
+        }
+
         // Check to see if port was specified
         if dict.contains("address") {
             // Try to get the value
