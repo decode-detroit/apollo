@@ -1,6 +1,6 @@
 [package]
 name = "apollo"
-version = "1.0.2"
+version = "1.0.3"
 authors = ["Patton Doyle <patton@DecodeDetroit.com>"]
 description = "Realtime Remote-Controlled Multimedia Player"
 license = "GPL-3.0-or-later"
@@ -22,12 +22,12 @@ glib = "0.18"
 cairo-rs = "^0"
 gstreamer = "0.21"
 gstreamer-video = "^0"
-tokio = { version = "1.52", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.53", features = ["macros", "rt-multi-thread"] }
 warp = { version = "0.4", features = ["server"] }
 async-stream = "0.3"
 futures-util = "0.3"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 anyhow = "1.0"
-redis = "1.2"
+redis = "1.6"
 
