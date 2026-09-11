@@ -40,9 +40,9 @@ use self::system_interface::SystemInterface;
 use self::web_interface::WebInterface;
 
 // Import standard library features
+use std::ops::ControlFlow;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::ops::ControlFlow;
 
 // Import tracing features
 use tracing::{Level, error};
@@ -117,7 +117,9 @@ impl Apollo {
 ///
 fn main() -> glib::ExitCode {
     // Create the gtk application window. Failure results in immediate panic!
-    let application = gtk4::Application::builder().application_id("com.decodedetroit.Apollo").build();
+    let application = gtk4::Application::builder()
+        .application_id("com.decodedetroit.Apollo")
+        .build();
 
     // Create the default address and backup server location
     let address = Arc::new(Mutex::new(String::from(DEFAULT_ADDRESS)));

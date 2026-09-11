@@ -28,11 +28,6 @@ use std::rc::Rc;
 // Import GTK and GIO libraries
 use gtk4::prelude::*;
 
-// Import Gstreamer Library
-use gst::prelude::*;
-use gstreamer as gst;
-use gst_plugin_gtk4;
-
 // Import FNV HashMap
 use fnv::FnvHashMap;
 
@@ -90,7 +85,7 @@ impl VideoWindow {
 
         // Create the new window and pass dimensions if specified
         let (window, overlay) = self.new_window(Some(definition));
-        
+
         // Show the window and overlay
         window.set_visible(true);
         overlay.set_visible(true);
@@ -106,7 +101,7 @@ impl VideoWindow {
     ///
     pub fn add_new_video(&mut self, video_stream: VideoStream) {
         // Wrap the video sink into a widget
-        let video_widget = gst-plugin-gtk4::RenderWidget::new(&video_stream.video_sink);
+        let video_widget = gst_plugin_gtk4::RenderWidget::new(&video_stream.video_sink);
 
         // Try to add the video allocation to the channel map
         match self.channel_map.try_borrow_mut() {
@@ -129,7 +124,7 @@ impl VideoWindow {
         // Check to see if there is already a matching window
         if let Some(overlay) = self.overlay_widgets.get(&window_number) {
             // Add the video area to the overlay
-            overlay.add_overlay(&video_stream.video_widget);
+            overlay.add_overlay(&video_widget);
 
         // Otherwise, create a new window
         } else {
@@ -137,7 +132,7 @@ impl VideoWindow {
             let (window, overlay) = self.new_window(None);
 
             // Add the video area to the overlay
-            overlay.add_overlay(&video_stream.video_widget);
+            overlay.add_overlay(&video_widget);
 
             // Show the window and overlay
             window.set_visible(true);

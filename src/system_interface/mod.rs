@@ -35,9 +35,9 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 // Import Tokio features
-use tokio::sync::{mpsc, Mutex as TokioMutex};
-use tokio::time::{interval, sleep};
+use tokio::sync::{Mutex as TokioMutex, mpsc};
 use tokio::task::JoinHandle;
+use tokio::time::{interval, sleep};
 
 // Import FNV HashSet
 use fnv::FnvHashSet;
@@ -61,7 +61,7 @@ pub struct SystemInterface {
     media_playback: MediaPlayback, // the structure for controlling media playback
     backup_handler: Arc<TokioMutex<BackupHandler>>, // the structure for managing the live system backup
     backup_timer: JoinHandle<()>, // process handle to allow for quick cancelling of the backup tick
-    windows: FnvHashSet<WindowNumber>,  // a set of already-defined windows (to avoid duplication)
+    windows: FnvHashSet<WindowNumber>, // a set of already-defined windows (to avoid duplication)
 }
 
 // Implement key SystemInterface functionality
@@ -94,15 +94,16 @@ impl SystemInterface {
         }
 
         // Initialize the backup handler
-        let backup_handler =
-            Arc::new(TokioMutex::new(BackupHandler::new(address, server_location, interface_send.clone()).await));
+        let backup_handler = Arc::new(TokioMutex::new(
+            BackupHandler::new(address, server_location, interface_send.clone()).await,
+        ));
 
         // Set regular updates for the backup handler
         let backup_clone = backup_handler.clone();
         let backup_timer = tokio::spawn(async move {
             // Create the update interval
             let mut interval = interval(Duration::from_secs(MEDIA_UPDATE_INTERVAL));
-    
+
             // Loop forever until the program closes
             loop {
                 // Wait the designated interval
@@ -315,8 +316,7 @@ impl SystemInterface {
             for window in window_list.drain(..) {
                 // If the window isn't already defined, add it
                 if self.windows.insert(window.window_number) {
-                    self.interface_send
-                        .send(InterfaceUpdate::Window { window: window });
+                    self.interface_send.send(InterfaceUpdate::Window { window });
                 }
             }
 
@@ -403,7 +403,6 @@ impl SystemInterface {
         }
     }
 }
-
 
 // Implement the drop trait for the system interface struct.
 impl Drop for SystemInterface {

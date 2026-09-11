@@ -64,6 +64,9 @@ impl MediaPlayback {
         // Try to initialize GStreamer
         gst::init().context("Unable to initialize Gstreamer.")?;
 
+        // Register the GST-GTK plugin
+        gst_plugin_gtk4::plugin_register_static().context("Unable to register GST-GTK4 plugin.");
+
         // Return the complete module
         Ok(MediaPlayback {
             channels: FnvHashMap::default(),
@@ -104,7 +107,9 @@ impl MediaPlayback {
             // An ALSA device
             Some(AudioDevice::Alsa { device_name }) => {
                 // Create and set the audio sink
-                let audio_sink = gst::ElementFactory::make("alsasink").build().context("Unable to create Alsa audio sink.")?;
+                let audio_sink = gst::ElementFactory::make("alsasink")
+                    .build()
+                    .context("Unable to create Alsa audio sink.")?;
                 audio_sink.set_property("device", &device_name);
                 playbin.set_property("audio-sink", &audio_sink);
             }
@@ -112,7 +117,9 @@ impl MediaPlayback {
             // A Pulse Audio device
             Some(AudioDevice::Pulse { device_name }) => {
                 // Create and set the audio sink
-                let audio_sink = gst::ElementFactory::make("pulsesink").build().context("Unable to create Pulse audio sink.")?;
+                let audio_sink = gst::ElementFactory::make("pulsesink")
+                    .build()
+                    .context("Unable to create Pulse audio sink.")?;
                 audio_sink.set_property("device", &device_name);
                 playbin.set_property("audio-sink", &audio_sink);
             }
@@ -133,7 +140,9 @@ impl MediaPlayback {
             );
 
             // Try to create the gtk4 sink
-            let video_sink = gst::ElementFactory::make("gtk4paintablesink").build().context("Unable to create video sink.")?;
+            let video_sink = gst::ElementFactory::make("gtk4paintablesink")
+                .build()
+                .context("Unable to create video sink.")?;
             playbin.set_property("video-sink", &video_sink);
 
             // Get the paintable area from the sink
@@ -141,7 +150,7 @@ impl MediaPlayback {
 
             // Return early f GL context is supported
             video_paintable.property::<Option<gdk4::GLContext>>("gl-context").context("GL context is not available")?;
-    
+
             // Try to create the sink from the paintable
             let sink = gst::ElementFactory::make("glsinkbin")
                 .property("sink", &gtksink)

@@ -33,9 +33,6 @@ use tracing::{error, warn};
 // Imprt redis client library
 use redis::{Commands, ConnectionLike, RedisResult};
 
-// Import YAML processing library
-use serde_yaml;
-
 /// A structure which holds a reference to the Redis server (if it exists) and
 /// syncronizes local data to and from the server.
 ///
@@ -453,7 +450,7 @@ impl BackupHandler {
 
     /// A method to advance the media seek positions and backup the new positions
     /// as well as any other new data to the backup server.
-    /// 
+    ///
     /// # Errors
     ///
     /// This function will raise an error if it is unable to connect to the
