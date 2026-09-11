@@ -48,4 +48,4 @@ impl MediaPlayback {
 }
 
 /// A structure to store the media playbacks in a playlist
-pub type MediaPlaylist = FnvHashMap<u32, MediaPlayback>;
+pub type MediaPlaylist = FnvHashMap<ChannelNumber, MediaPlayback>;

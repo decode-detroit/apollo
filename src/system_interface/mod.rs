@@ -61,7 +61,7 @@ pub struct SystemInterface {
     media_playback: MediaPlayback, // the structure for controlling media playback
     backup_handler: Arc<TokioMutex<BackupHandler>>, // the structure for managing the live system backup
     backup_timer: JoinHandle<()>, // process handle to allow for quick cancelling of the backup tick
-    windows: FnvHashSet<u32>,  // a set of already-defined windows (to avoid duplication)
+    windows: FnvHashSet<WindowNumber>,  // a set of already-defined windows (to avoid duplication)
 }
 
 // Implement key SystemInterface functionality

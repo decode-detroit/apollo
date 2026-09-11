@@ -23,16 +23,15 @@ use crate::definitions::*;
 
 // Import standard library features
 use std::cell::RefCell;
-use std::ffi::c_void;
 use std::rc::Rc;
 
-// Import GTK and GDK libraries
-use gdk::Cursor;
-use gtk::prelude::*;
+// Import GTK and GIO libraries
+use gtk4::prelude::*;
 
 // Import Gstreamer Library
-use gst_video::prelude::*;
-use gstreamer_video as gst_video;
+use gst::prelude::*;
+use gstreamer as gst;
+use gst_plugin_gtk4;
 
 // Import FNV HashMap
 use fnv::FnvHashMap;
@@ -43,9 +42,10 @@ use tracing::error;
 /// A structure to contain the window for displaying video streams.
 ///
 pub struct VideoWindow {
-    overlay_map: FnvHashMap<u32, gtk::Overlay>, // the mapping of the overlay widgets
-    channel_map: Rc<RefCell<FnvHashMap<std::string::String, gtk::Rectangle>>>, // the mapping of channel numbers to allocations
-    window_map: FnvHashMap<u32, u32>, // the mapping of channel numbers to windows
+    window_widgets: FnvHashMap<WindowNumber, gtk4::Window>, // the hashmap of the window widget for each window
+    overlay_widgets: FnvHashMap<WindowNumber, gtk4::Overlay>, // the hashmap of the overlay widget for each window
+    window_map: FnvHashMap<ChannelNumber, WindowNumber>, // the mapping of channel numbers to windows
+    channel_map: Rc<RefCell<FnvHashMap<std::string::String, gdk4::Rectangle>>>, // the hashmap of channel numbers to allocations
 }
 
 // Implement key features for the video window
@@ -53,32 +53,24 @@ impl VideoWindow {
     /// A function to create a new prompt string dialog structure.
     ///
     pub fn new() -> VideoWindow {
-        // Create the overlay map and window map
-        let overlay_map = FnvHashMap::default();
-        let window_map = FnvHashMap::default();
-
-        // Create the channel map
-        let channel_map: Rc<RefCell<FnvHashMap<std::string::String, gtk::Rectangle>>> =
-            Rc::new(RefCell::new(FnvHashMap::default()));
-
         // Return the completed Video Window
         VideoWindow {
-            overlay_map,
-            channel_map,
-            window_map,
+            window_widgets: FnvHashMap::default(),
+            overlay_widgets: FnvHashMap::default(),
+            window_map: FnvHashMap::default(),
+            channel_map: Rc::new(RefCell::new(FnvHashMap::default())),
         }
     }
 
     /// A method to clear all video windows
     ///
     pub fn clear_all(&mut self) {
+        // Empty the overlay widgets
+        self.overlay_widgets.clear();
+
         // Destroy any open windows
-        for (_, overlay) in self.overlay_map.drain() {
-            if let Some(window) = overlay.parent() {
-                unsafe {
-                    window.destroy();
-                }
-            }
+        for (_, window) in self.window_widgets.drain() {
+            window.destroy();
         }
 
         // Empty the channel map
@@ -87,10 +79,10 @@ impl VideoWindow {
         }
 
         // Empty the window map
-        self.window_map = FnvHashMap::default();
+        self.window_map.clear();
     }
 
-    /// A method to define a new application window
+    /// A method to define a new window
     ///
     pub fn define_window(&mut self, definition: WindowDefinition) {
         // Copy the window number
@@ -98,19 +90,72 @@ impl VideoWindow {
 
         // Create the new window and pass dimensions if specified
         let (window, overlay) = self.new_window(Some(definition));
+        
+        // Show the window and overlay
+        window.set_visible(true);
+        overlay.set_visible(true);
 
-        // Save the overlay in the overlay map
-        self.overlay_map.insert(window_number, overlay);
+        // Save the window in the window widgets
+        self.window_widgets.insert(window_number, window);
 
-        // Show the window
-        window.show_all();
+        // Save the overlay in the overlay widgets
+        self.overlay_widgets.insert(window_number, overlay);
     }
 
     /// A method to add a new video to the video window
     ///
     pub fn add_new_video(&mut self, video_stream: VideoStream) {
+        // Wrap the video sink into a widget
+        let video_widget = gst-plugin-gtk4::RenderWidget::new(&video_stream.video_sink);
+
+        // Try to add the video allocation to the channel map
+        match self.channel_map.try_borrow_mut() {
+            // Insert the new channel
+            Ok(mut map) => {
+                map.insert(video_stream.channel.to_string(), video_stream.allocation);
+            }
+
+            // Fail silently
+            _ => return,
+        }
+
+        // Extract the window number (for use below)
+        let window_number = video_stream.window_number;
+
+        // Save the channel -> window mapping to the map
+        self.window_map
+            .insert(video_stream.channel, video_stream.window_number);
+
+        // Check to see if there is already a matching window
+        if let Some(overlay) = self.overlay_widgets.get(&window_number) {
+            // Add the video area to the overlay
+            overlay.add_overlay(&video_stream.video_widget);
+
+        // Otherwise, create a new window
+        } else {
+            // Create the new window
+            let (window, overlay) = self.new_window(None);
+
+            // Add the video area to the overlay
+            overlay.add_overlay(&video_stream.video_widget);
+
+            // Show the window and overlay
+            window.set_visible(true);
+            overlay.set_visible(true);
+
+            // Save the window in the window widgets
+            self.window_widgets.insert(window_number, window);
+
+            // Save the overlay in the overlay widgets
+            self.overlay_widgets.insert(window_number, overlay);
+        }
+    }
+
+    /*/// A method to add a new video to the video window
+    ///
+    pub fn add_new_video(&mut self, video_stream: VideoStream) {
         // Create a new video area
-        let video_area = gtk::DrawingArea::new();
+        let video_area = gtk4::DrawingArea::new();
 
         // Try to add the video area to the channel map
         match self.channel_map.try_borrow_mut() {
@@ -132,11 +177,10 @@ impl VideoWindow {
             .insert(video_stream.channel, video_stream.window_number);
 
         // Draw a black background
-        video_area.connect_draw(|_, cr| {
+        video_area.set_draw_func(|_, cr, _, _| {
             // Draw the background black
             cr.set_source_rgb(0.0, 0.0, 0.0);
             cr.paint().unwrap_or(());
-            glib::Propagation::Stop
         });
 
         // Connect the realize signal for the video area
@@ -208,12 +252,12 @@ impl VideoWindow {
         });
 
         // Check to see if there is already a matching window
-        if let Some(overlay) = self.overlay_map.get(&window_number) {
+        if let Some(overlay) = self.overlay_widgets.get(&window_number) {
             // Add the video area to the overlay
             overlay.add_overlay(&video_area);
 
             // Show the video area
-            video_area.show();
+            video_area.set_visible(true);
 
         // Otherwise, create a new window
         } else {
@@ -223,13 +267,17 @@ impl VideoWindow {
             // Add the video area to the overlay
             overlay.add_overlay(&video_area);
 
-            // Save the overlay in the overlay map
-            self.overlay_map.insert(window_number, overlay);
+            // Show the window and overlay
+            window.set_visible(true);
+            overlay.set_visible(true);
 
-            // Show the window
-            window.show_all();
+            // Save the window in the window widgets
+            self.window_widgets.insert(window_number, window);
+
+            // Save the overlay in the overlay widgets
+            self.overlay_widgets.insert(window_number, overlay);
         }
-    }
+    }*/
 
     /// A method to resize  a video within the window
     ///
@@ -239,7 +287,7 @@ impl VideoWindow {
             // If the current video was found
             if let Some(allocation) = map.get_mut(&channel_allocation.channel.to_string()) {
                 // Update the allocation
-                *allocation = gtk::Rectangle::new(
+                *allocation = gdk4::Rectangle::new(
                     channel_allocation.video_frame.left,
                     channel_allocation.video_frame.top,
                     channel_allocation.video_frame.width,
@@ -263,7 +311,7 @@ impl VideoWindow {
         // Try to locate the correct window number
         if let Some(window_number) = self.window_map.get(&channel_allocation.channel) {
             // Try to get a copy of the overlay
-            if let Some(overlay) = self.overlay_map.get(window_number) {
+            if let Some(overlay) = self.overlay_widgets.get(window_number) {
                 // Trigger a reallocation of the overlay
                 overlay.queue_resize();
             }
@@ -281,7 +329,7 @@ impl VideoWindow {
                 match channel_realignment.direction {
                     // Adjust the direction accordingly
                     Direction::Up => {
-                        *allocation = gtk::Rectangle::new(
+                        *allocation = gdk4::Rectangle::new(
                             allocation.x(),
                             allocation.y() - 1,
                             allocation.width(),
@@ -289,7 +337,7 @@ impl VideoWindow {
                         )
                     }
                     Direction::Down => {
-                        *allocation = gtk::Rectangle::new(
+                        *allocation = gdk4::Rectangle::new(
                             allocation.x(),
                             allocation.y() + 1,
                             allocation.width(),
@@ -297,7 +345,7 @@ impl VideoWindow {
                         )
                     }
                     Direction::Left => {
-                        *allocation = gtk::Rectangle::new(
+                        *allocation = gdk4::Rectangle::new(
                             allocation.x() - 1,
                             allocation.y(),
                             allocation.width(),
@@ -305,7 +353,7 @@ impl VideoWindow {
                         )
                     }
                     Direction::Right => {
-                        *allocation = gtk::Rectangle::new(
+                        *allocation = gdk4::Rectangle::new(
                             allocation.x() + 1,
                             allocation.y(),
                             allocation.width(),
@@ -331,7 +379,7 @@ impl VideoWindow {
         // Try to locate the correct window number
         if let Some(window_number) = self.window_map.get(&channel_realignment.channel) {
             // Try to get a copy of the overlay
-            if let Some(overlay) = self.overlay_map.get(window_number) {
+            if let Some(overlay) = self.overlay_widgets.get(window_number) {
                 // Trigger a reallocation of the overlay
                 overlay.queue_resize();
             }
@@ -340,52 +388,29 @@ impl VideoWindow {
 
     // A helper method to create a new video window and return the window and overlay
     //
-    fn new_window(&self, definition: Option<WindowDefinition>) -> (gtk::Window, gtk::Overlay) {
+    fn new_window(&self, definition: Option<WindowDefinition>) -> (gtk4::Window, gtk4::Overlay) {
         // Create the new window
-        let window = gtk::Window::new(gtk::WindowType::Toplevel);
+        let window = gtk4::Window::new();
 
         // Set window parameters
         window.set_decorated(false);
-        window.set_title(WINDOW_TITLE);
-        window.set_icon_from_file(LOGO_SQUARE).unwrap_or(()); // give up if unsuccessful
+        window.set_title(Some(WINDOW_TITLE));
 
         // Disable the delete button for the window
         window.set_deletable(false);
 
-        // Connect the realize signal for the video area
-        window.connect_realize(move |window| {
-            // Try to get a copy of the GDk window
-            let gdk_window = match window.window() {
-                Some(new_window) => new_window,
-                None => {
-                    error!("Unable to get current window for video overlay.");
-                    return;
-                }
-            };
+        // Set the window cursor to blank
+        window.set_cursor_from_name(Some("none"));
 
-            // Set the window cursor to blank
-            let display = gdk_window.display();
-            if let Some(cursor) = Cursor::for_display(&display, gdk::CursorType::BlankCursor) {
-                gdk_window.set_cursor(Some(&cursor));
-            }
-
-            // Check to make sure the window is native
-            if !gdk_window.ensure_native() {
-                error!("Widget is not located inside a native window.");
-                return;
-            }
-        });
-
-        // Create black background TODO allow other colors for the background
-        let background = gtk::DrawingArea::new();
-        background.connect_draw(|_, cr| {
+        // Create black background
+        let background = gtk4::DrawingArea::new();
+        background.set_draw_func(|_, cr, _, _| {
             // Draw the background black
             cr.set_source_rgb(0.0, 0.0, 0.0);
             cr.paint().unwrap_or(());
-            glib::Propagation::Stop
         });
 
-        // If there is a definition
+        // If there is a window definition
         if let Some(detail) = definition {
             // And it is set to fullscreen, change the window setting
             if detail.fullscreen {
@@ -403,8 +428,8 @@ impl VideoWindow {
         }
 
         // Create the overlay and add the background
-        let overlay = gtk::Overlay::new();
-        overlay.add(&background);
+        let overlay = gtk4::Overlay::new();
+        overlay.set_child(Some(&background));
 
         // Connect the get_child_position signal
         let channel_map = self.channel_map.clone();
@@ -423,9 +448,9 @@ impl VideoWindow {
         });
 
         // Add the overlay to the window
-        window.add(&overlay);
+        window.set_child(Some(&overlay));
 
-        // Return the overlay
+        // Return the window and overlay
         (window, overlay)
     }
 }

@@ -42,6 +42,7 @@ use self::web_interface::WebInterface;
 // Import standard library features
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::ops::ControlFlow;
 
 // Import tracing features
 use tracing::{Level, error};
@@ -51,7 +52,7 @@ use tracing::{Level, error};
 extern crate anyhow;
 
 // Import GTK and GIO libraries
-use gio::prelude::*;
+use gtk4::{glib, prelude::*};
 
 // Import tokio features
 use tokio::runtime::Runtime;
@@ -66,7 +67,7 @@ impl Apollo {
     /// A function to build the main program and the user interface
     ///
     fn build_program(
-        application: &gtk::Application,
+        application: &gtk4::Application,
         address: Arc<Mutex<String>>,
         server_location: Arc<Mutex<Option<String>>>,
     ) {
@@ -114,9 +115,9 @@ impl Apollo {
 /// The main function of the program, simplified to as high a level as possible
 /// to allow GTK+ to work its startup magic.
 ///
-fn main() {
+fn main() -> glib::ExitCode {
     // Create the gtk application window. Failure results in immediate panic!
-    let application = gtk::Application::new(None, gio::ApplicationFlags::empty());
+    let application = gtk4::Application::builder().application_id("com.decodedetroit.Apollo").build();
 
     // Create the default address and backup server location
     let address = Arc::new(Mutex::new(String::from(DEFAULT_ADDRESS)));
@@ -242,7 +243,7 @@ fn main() {
         }
 
         // Don't continue the application
-        return -1;
+        return ControlFlow::Break(glib::ExitCode::new(1));
     });
 
     // Create the program and launch the background thread
@@ -254,5 +255,5 @@ fn main() {
     application.connect_activate(|_| {});
 
     // Run the application until all the windows are closed
-    application.run();
+    application.run()
 }

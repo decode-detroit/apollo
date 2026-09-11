@@ -23,15 +23,12 @@ use crate::definitions::*;
 // Import standard library features
 use std::sync::{Arc, Mutex};
 
-// Import GTK Library
-use glib;
-use gtk;
-use gtk::prelude::*;
+// Import GTK and GIO libraries
+use gtk4::{glib, prelude::*};
 
 // Import Gstreamer Library
 use gst::prelude::*;
 use gstreamer as gst;
-use gstreamer_video as gst_video;
 
 // Import FNV HashMap
 use fnv::FnvHashMap;
@@ -56,7 +53,7 @@ struct InternalChannel {
 ///
 #[derive(Debug)]
 pub struct MediaPlayback {
-    channels: FnvHashMap<u32, InternalChannel>, // the map of channel numbers to internal channels
+    channels: FnvHashMap<ChannelNumber, InternalChannel>, // the map of channel numbers to internal channels
 }
 
 // Implement key functionality for the Media Out structure
@@ -107,8 +104,7 @@ impl MediaPlayback {
             // An ALSA device
             Some(AudioDevice::Alsa { device_name }) => {
                 // Create and set the audio sink
-                let audio_sink = gst::ElementFactory::make_with_name("alsasink", None)
-                    .context("Unable to create alsasink.")?;
+                let audio_sink = gst::ElementFactory::make("alsasink").build().context("Unable to create Alsa audio sink.")?;
                 audio_sink.set_property("device", &device_name);
                 playbin.set_property("audio-sink", &audio_sink);
             }
@@ -116,8 +112,7 @@ impl MediaPlayback {
             // A Pulse Audio device
             Some(AudioDevice::Pulse { device_name }) => {
                 // Create and set the audio sink
-                let audio_sink = gst::ElementFactory::make_with_name("pulsesink", None)
-                    .context("Unable to create pulsesink.")?;
+                let audio_sink = gst::ElementFactory::make("pulsesink").build().context("Unable to create Pulse audio sink.")?;
                 audio_sink.set_property("device", &device_name);
                 playbin.set_property("audio-sink", &audio_sink);
             }
@@ -130,25 +125,35 @@ impl MediaPlayback {
         let mut video_stream = None;
         if let Some(video_frame) = media_channel.video_frame {
             // Compose the allocation
-            let allocation = gtk::Rectangle::new(
+            let allocation = gdk4::Rectangle::new(
                 video_frame.left,
                 video_frame.top,
                 video_frame.width,
                 video_frame.height,
             );
 
-            // Try to create the video overlay
-            let video_overlay = match playbin.clone().dynamic_cast::<gst_video::VideoOverlay>() {
-                Ok(overlay) => overlay,
-                _ => return Err(anyhow!("Unable to create video stream.")),
-            };
+            // Try to create the gtk4 sink
+            let video_sink = gst::ElementFactory::make("gtk4paintablesink").build().context("Unable to create video sink.")?;
+            playbin.set_property("video-sink", &video_sink);
 
-            // Send the new video stream to the user interface
+            // Get the paintable area from the sink
+            /*let video_paintable = video_sink.property::<gdk4::Paintable>("paintable");
+
+            // Return early f GL context is supported
+            video_paintable.property::<Option<gdk4::GLContext>>("gl-context").context("GL context is not available")?;
+    
+            // Try to create the sink from the paintable
+            let sink = gst::ElementFactory::make("glsinkbin")
+                .property("sink", &gtksink)
+                .build()
+                .unwrap();*/
+
+            // Send the new video stream to the gtk interface
             video_stream = Some(VideoStream {
                 window_number: video_frame.window_number,
                 channel: media_channel.channel,
                 allocation,
-                video_overlay,
+                video_sink,
             });
         } // Otherwise, any window creation (if needed) is left to gstreamer
 

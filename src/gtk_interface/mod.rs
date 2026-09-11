@@ -37,10 +37,8 @@ use std::rc::Rc;
 use std::sync::mpsc;
 use std::time::Duration;
 
-// Import GTK and GDK libraries
-use glib;
-use gtk;
-use gtk::prelude::*;
+// Import GTK and GIO libraries
+use gtk4::{glib, prelude::*};
 
 // Define user interface constants
 const REFRESH_RATE: u64 = 10; // the display refresh rate in milliseconds
@@ -51,7 +49,7 @@ const REFRESH_RATE: u64 = 10; // the display refresh rate in milliseconds
 #[derive(Clone)]
 pub struct GtkInterface {
     video_window: Rc<RefCell<VideoWindow>>, // the video window, wrapped in a refcell and rc for multi-referencing
-    empty_window: gtk::ApplicationWindow, // Empty GTK window to keep the program running while there are no video videos open
+    empty_window: gtk4::ApplicationWindow, // Empty GTK window to keep the program running while there are no video videos open
 }
 
 // Implement key GtkInterface functionality
@@ -59,11 +57,11 @@ impl GtkInterface {
     /// A function to create a new instance of the gtk interface.
     ///
     pub fn spawn_interface(
-        application: &gtk::Application,
+        application: &gtk4::Application,
         interface_receive: mpsc::Receiver<InterfaceUpdate>,
     ) {
         // Create the empty placeholder window
-        let empty_window = gtk::ApplicationWindow::new(application);
+        let empty_window = gtk4::ApplicationWindow::new(application);
 
         // Create the video window
         let video_window = VideoWindow::new();
@@ -139,9 +137,7 @@ impl GtkInterface {
                 InterfaceUpdate::Close => {
                     // Otherwise, destroy the video window
                     video_window.clear_all();
-                    unsafe {
-                        self.empty_window.destroy();
-                    }
+                    self.empty_window.destroy();
                     break;
                 }
             }
