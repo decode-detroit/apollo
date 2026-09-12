@@ -21,7 +21,6 @@
 use tracing::Level;
 
 // Define program constants
-pub const LOGO_SQUARE: &str = "logo_square.png";
 pub const WINDOW_TITLE: &str = "Apollo";
 pub const DEFAULT_ADDRESS: &str = "127.0.0.1:27655";
 pub const DEFAULT_LOGLEVEL: Level = Level::WARN;

@@ -101,7 +101,7 @@ impl VideoWindow {
     ///
     pub fn add_new_video(&mut self, video_stream: VideoStream) {
         // Wrap the video sink into a widget
-        let video_widget = gst_plugin_gtk4::RenderWidget::new(&video_stream.video_sink);
+        let video_widget = gstgtk4::RenderWidget::new(&video_stream.video_sink);
 
         // Try to add the video allocation to the channel map
         match self.channel_map.try_borrow_mut() {
@@ -145,134 +145,6 @@ impl VideoWindow {
             self.overlay_widgets.insert(window_number, overlay);
         }
     }
-
-    /*/// A method to add a new video to the video window
-    ///
-    pub fn add_new_video(&mut self, video_stream: VideoStream) {
-        // Create a new video area
-        let video_area = gtk4::DrawingArea::new();
-
-        // Try to add the video area to the channel map
-        match self.channel_map.try_borrow_mut() {
-            // Insert the new channel
-            Ok(mut map) => {
-                map.insert(video_stream.channel.to_string(), video_stream.allocation);
-            }
-
-            // Fail silently
-            _ => return,
-        }
-        video_area.set_widget_name(&video_stream.channel.to_string());
-
-        // Extract the window number (for use below)
-        let window_number = video_stream.window_number;
-
-        // Save the channel -> window mapping to the map
-        self.window_map
-            .insert(video_stream.channel, video_stream.window_number);
-
-        // Draw a black background
-        video_area.set_draw_func(|_, cr, _, _| {
-            // Draw the background black
-            cr.set_source_rgb(0.0, 0.0, 0.0);
-            cr.paint().unwrap_or(());
-        });
-
-        // Connect the realize signal for the video area
-        video_area.connect_realize(move |video_area| {
-            // Extract a reference for the video overlay
-            let video_overlay = &video_stream.video_overlay;
-
-            // Try to get a copy of the GDk window
-            let gdk_window = match video_area.window() {
-                Some(window) => window,
-                None => {
-                    error!("Unable to get current window for video overlay.");
-                    return;
-                }
-            };
-
-            // Check to make sure the window is native
-            if !gdk_window.ensure_native() {
-                error!("Widget is not located inside a native window.");
-                return;
-            }
-
-            // Extract the display type of the window
-            let display_type = gdk_window.display().type_().name();
-
-            // Switch based on the platform
-            #[cfg(target_os = "linux")]
-            {
-                // Check if we're using X11
-                if display_type == "GdkX11Display" {
-                    // Connect to the get_xid function
-                    unsafe extern "C" {
-                        pub fn gdk_x11_window_get_xid(
-                            window: *mut glib::object::Object,
-                        ) -> *mut c_void;
-                    }
-
-                    // Connect the video overlay to the correct window handle
-                    #[allow(clippy::cast_ptr_alignment)]
-                    unsafe {
-                        let xid = gdk_x11_window_get_xid(gdk_window.as_ptr() as *mut _);
-                        video_overlay.set_window_handle(xid as usize);
-                    }
-                } else {
-                    error!("Unsupported display type: {}.", display_type);
-                }
-            }
-
-            // If on Mac OS
-            #[cfg(target_os = "macos")]
-            {
-                // Check if we're using Quartz
-                if display_type_name == "GdkQuartzDisplay" {
-                    extern "C" {
-                        pub fn gdk_quartz_window_get_nsview(
-                            window: *mut glib::object::GObject,
-                        ) -> *mut c_void;
-                    }
-
-                    #[allow(clippy::cast_ptr_alignment)]
-                    unsafe {
-                        let window = gdk_quartz_window_get_nsview(gdk_window.as_ptr() as *mut _);
-                        video_overlay.set_window_handle(window as usize);
-                    }
-                } else {
-                    error!("Unsupported display type {}.", display_type);
-                }
-            }
-        });
-
-        // Check to see if there is already a matching window
-        if let Some(overlay) = self.overlay_widgets.get(&window_number) {
-            // Add the video area to the overlay
-            overlay.add_overlay(&video_area);
-
-            // Show the video area
-            video_area.set_visible(true);
-
-        // Otherwise, create a new window
-        } else {
-            // Create the new window
-            let (window, overlay) = self.new_window(None);
-
-            // Add the video area to the overlay
-            overlay.add_overlay(&video_area);
-
-            // Show the window and overlay
-            window.set_visible(true);
-            overlay.set_visible(true);
-
-            // Save the window in the window widgets
-            self.window_widgets.insert(window_number, window);
-
-            // Save the overlay in the overlay widgets
-            self.overlay_widgets.insert(window_number, overlay);
-        }
-    }*/
 
     /// A method to resize  a video within the window
     ///

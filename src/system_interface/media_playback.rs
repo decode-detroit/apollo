@@ -27,8 +27,8 @@ use std::sync::{Arc, Mutex};
 use gtk4::{glib, prelude::*};
 
 // Import Gstreamer Library
-use gst::prelude::*;
 use gstreamer as gst;
+use gst::prelude::*;
 
 // Import FNV HashMap
 use fnv::FnvHashMap;
@@ -65,7 +65,7 @@ impl MediaPlayback {
         gst::init().context("Unable to initialize Gstreamer.")?;
 
         // Register the GST-GTK plugin
-        gst_plugin_gtk4::plugin_register_static().context("Unable to register GST-GTK4 plugin.");
+        gstgtk4::plugin_register_static().context("Unable to register GST-GTK4 plugin.")?;
 
         // Return the complete module
         Ok(MediaPlayback {
@@ -144,18 +144,6 @@ impl MediaPlayback {
                 .build()
                 .context("Unable to create video sink.")?;
             playbin.set_property("video-sink", &video_sink);
-
-            // Get the paintable area from the sink
-            /*let video_paintable = video_sink.property::<gdk4::Paintable>("paintable");
-
-            // Return early f GL context is supported
-            video_paintable.property::<Option<gdk4::GLContext>>("gl-context").context("GL context is not available")?;
-
-            // Try to create the sink from the paintable
-            let sink = gst::ElementFactory::make("glsinkbin")
-                .property("sink", &gtksink)
-                .build()
-                .unwrap();*/
 
             // Send the new video stream to the gtk interface
             video_stream = Some(VideoStream {
