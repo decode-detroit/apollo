@@ -3,6 +3,10 @@
 
 This media player is designed for realtime playback of audio and video in theatrical and interactive applications. Configure the display locations and cue new media over http, either on the same computer or from the web.
 
+## X11 Branch
+
+This branch is held as a stable archive branch of the final version that uses GTK3 and the x11 window manager. This branch is stable and can be used in production environments, although there are no planned improvements for this branch.
+
 ## Getting Started
 
 If you're on a 64-bit GNU/Linux system, you can use the the [binary release here](https://github.com/decode-detroit/apollo/releases). *Note:* The Wayland display server is not yet supported. Try the Wayland branch at your own risk.
