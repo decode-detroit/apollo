@@ -211,25 +211,25 @@ impl WebInterface {
         if let Ok(reply) = rx.await {
             // If the reply is a success
             if reply.is_success() {
-                return Ok(warp::reply::with_status(
+                Ok(warp::reply::with_status(
                     warp::reply::json(&reply),
                     http::StatusCode::OK,
-                ));
+                ))
 
             // Otherwise, note the error
             } else {
-                return Ok(warp::reply::with_status(
+                Ok(warp::reply::with_status(
                     warp::reply::json(&reply),
                     http::StatusCode::BAD_REQUEST,
-                ));
+                ))
             }
 
         // Otherwise, note the error
         } else {
-            return Ok(warp::reply::with_status(
+            Ok(warp::reply::with_status(
                 warp::reply::json(&WebReply::failure("Unable to process request.")),
                 http::StatusCode::INTERNAL_SERVER_ERROR,
-            ));
+            ))
         }
     }
 

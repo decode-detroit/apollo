@@ -147,7 +147,7 @@ impl WebReply {
     ///
     pub fn is_success(&self) -> bool {
         match self {
-            &WebReply::Generic { ref is_valid, .. } => is_valid.clone(),
+            WebReply::Generic { is_valid, .. } => *is_valid,
         }
     }
 }
@@ -195,12 +195,12 @@ impl InterfaceSend {
         let (gtk_interface_send, gtk_receive) = std_mpsc::channel();
 
         // Create and return the new items
-        return (
+        (
             InterfaceSend {
                 gtk_interface_send: Arc::new(Mutex::new(gtk_interface_send)),
             },
             gtk_receive,
-        );
+        )
     }
 
     /// A method to send an interface update. This method fails silently.

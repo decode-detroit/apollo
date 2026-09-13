@@ -72,7 +72,7 @@ impl GtkInterface {
             empty_window,
         };
 
-        // Launch the interface monitoring interrupt, currently set to ten times a second FIXME make this async
+        // Launch the interface monitoring interrupt, currently set to ten times a second TODO make this async
         let update_interface = clone!(gtk_interface => move || {
             gtk_interface.check_updates(&interface_receive);
             glib::ControlFlow::Continue // continue looking for updates indefinitely

@@ -82,7 +82,7 @@ impl BackupHandler {
                     );
 
                     // Unpack the result from the operation
-                    if let Err(..) = result {
+                    if result.is_err() {
                         // Warn that it wasn't possible to update the current scene
                         error!("Unable to set Redis snapshot settings.");
                     }
@@ -148,10 +148,10 @@ impl BackupHandler {
 
             // Try to copy the data to the server
             let result: RedisResult<bool> =
-                connection.set(&format!("apollo:{}:windows", self.address), &window_string);
+                connection.set(format!("apollo:{}:windows", self.address), &window_string);
 
             // Alert that the window list was not set
-            if let Err(..) = result {
+            if result.is_err() {
                 error!("Unable to backup window list onto backup server.");
             }
 
@@ -186,13 +186,11 @@ impl BackupHandler {
             };
 
             // Try to copy the data to the server
-            let result: RedisResult<bool> = connection.set(
-                &format!("apollo:{}:channels", self.address),
-                &channel_string,
-            );
+            let result: RedisResult<bool> =
+                connection.set(format!("apollo:{}:channels", self.address), &channel_string);
 
             // Alert that the channel list was not set
-            if let Err(..) = result {
+            if result.is_err() {
                 error!("Unable to backup channel list onto backup server.");
             }
 
@@ -256,13 +254,11 @@ impl BackupHandler {
             };
 
             // Try to copy the data to the server
-            let result: RedisResult<bool> = connection.set(
-                &format!("apollo:{}:channels", self.address),
-                &channel_string,
-            );
+            let result: RedisResult<bool> =
+                connection.set(format!("apollo:{}:channels", self.address), &channel_string);
 
             // Alert that the channel list was not set
-            if let Err(..) = result {
+            if result.is_err() {
                 error!("Unable to backup channel list onto backup server.");
             }
 
@@ -327,13 +323,11 @@ impl BackupHandler {
             };
 
             // Try to copy the data to the server
-            let result: RedisResult<bool> = connection.set(
-                &format!("apollo:{}:channels", self.address),
-                &channel_string,
-            );
+            let result: RedisResult<bool> =
+                connection.set(format!("apollo:{}:channels", self.address), &channel_string);
 
             // Alert that the channel list was not set
-            if let Err(..) = result {
+            if result.is_err() {
                 error!("Unable to backup channel list onto backup server.");
             }
 
@@ -481,10 +475,10 @@ impl BackupHandler {
 
             // Try to copy the data to the server
             let result: RedisResult<bool> =
-                connection.set(&format!("apollo:{}:media", self.address), &media_string);
+                connection.set(format!("apollo:{}:media", self.address), &media_string);
 
             // Alert that the media playlist was not set
-            if let Err(..) = result {
+            if result.is_err() {
                 error!("Unable to backup media onto backup server.");
             }
 
@@ -506,7 +500,7 @@ impl BackupHandler {
         if let Some(mut connection) = self.connection.take() {
             // Check to see if there is a media playlist
             let result: RedisResult<String> =
-                connection.get(&format!("apollo:{}:media", self.address));
+                connection.get(format!("apollo:{}:media", self.address));
 
             // If something was received
             if let Ok(media_string) = result {
@@ -525,7 +519,7 @@ impl BackupHandler {
                 // Try to read the existing window list
                 let mut window_list = WindowList::new();
                 let result: RedisResult<String> =
-                    connection.get(&format!("apollo:{}:windows", self.address));
+                    connection.get(format!("apollo:{}:windows", self.address));
 
                 // If something was received
                 if let Ok(window_string) = result {
@@ -541,7 +535,7 @@ impl BackupHandler {
                 // Try to read the existing channel list
                 let mut channel_list = ChannelList::new();
                 let result: RedisResult<String> =
-                    connection.get(&format!("apollo:{}:channels", self.address));
+                    connection.get(format!("apollo:{}:channels", self.address));
 
                 // If something was received
                 if let Ok(channel_string) = result {
@@ -583,13 +577,13 @@ impl Drop for BackupHandler {
         // If the redis connection exists
         if let Some(mut connection) = self.connection.take() {
             // Try to delete the media backup if it exists
-            let _: RedisResult<bool> = connection.del(&format!("apollo:{}:media", self.address));
+            let _: RedisResult<bool> = connection.del(format!("apollo:{}:media", self.address));
 
             // Try to delete the channel backup if it exists
-            let _: RedisResult<bool> = connection.del(&format!("apollo:{}:channels", self.address));
+            let _: RedisResult<bool> = connection.del(format!("apollo:{}:channels", self.address));
 
             // Try to delete the window backup if it exists
-            let _: RedisResult<bool> = connection.del(&format!("apollo:{}:windows", self.address));
+            let _: RedisResult<bool> = connection.del(format!("apollo:{}:windows", self.address));
         }
 
         // Close the GTK program and video windows

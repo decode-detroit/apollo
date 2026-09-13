@@ -117,7 +117,9 @@ fn main() -> glib::ExitCode {
     gstgtk4::plugin_register_static().expect("Unable to register GST-GTK4 plugin.");
 
     // Create the gtk application window. Failure results in immediate panic!
-    let application = gtk4::Application::builder().application_id("com.decodedetroit.Apollo").build();
+    let application = gtk4::Application::builder()
+        .application_id("com.decodedetroit.Apollo")
+        .build();
 
     // Create the default address and backup server location
     let address = Arc::new(Mutex::new(String::from(DEFAULT_ADDRESS)));
@@ -251,7 +253,7 @@ fn main() -> glib::ExitCode {
         Apollo::build_program(gtk_app, address.clone(), server_location.clone());
     });
 
-    // Run the application until all the windows are closed        
+    // Run the application until all the windows are closed
     let code = application.run();
 
     // Unload any gstreamer resources

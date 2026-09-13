@@ -40,7 +40,7 @@ pub struct VideoWindow {
     window_widgets: FnvHashMap<WindowNumber, gtk4::Window>, // the hashmap of the window widget for each window
     overlay_widgets: FnvHashMap<WindowNumber, gtk4::Overlay>, // the hashmap of the overlay widget for each window
     window_map: FnvHashMap<ChannelNumber, WindowNumber>, // the mapping of channel numbers to windows
-    channel_map: Rc<RefCell<FnvHashMap<std::string::String, gdk4::Rectangle>>>, // the hashmap of channel numbers to allocations
+    channel_map: Rc<RefCell<FnvHashMap<std::string::String, gdk4::Rectangle>>>, // the hashmap of channel numbers (as a string) to allocations
 }
 
 // Implement key features for the video window
@@ -102,6 +102,9 @@ impl VideoWindow {
     pub fn add_new_video(&mut self, video_stream: VideoStream) {
         // Wrap the video sink into a widget
         let video_widget = gstgtk4::RenderWidget::new(&video_stream.video_sink);
+
+        // Set the widgets name according to the channel number
+        video_widget.set_widget_name(&video_stream.channel.to_string());
 
         // Try to add the video allocation to the channel map
         match self.channel_map.try_borrow_mut() {
@@ -306,7 +309,7 @@ impl VideoWindow {
                 // Look up the name in the channel map
                 if let Some(allocation) = map.get(&widget.widget_name().to_string()) {
                     // Return the completed allocation
-                    return Some(allocation.clone());
+                    return Some(*allocation);
                 }
             }
 

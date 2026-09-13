@@ -179,7 +179,7 @@ impl SystemInterface {
                         // Trace the error and reply with the error
                         } else {
                             error!("Window is already defined.");
-                            request.reply_to.send(WebReply::failure(format!("Window was already defined."))).unwrap_or(());
+                            request.reply_to.send(WebReply::failure("Window was already defined.".to_string())).unwrap_or(());
                         }
                     }
 
@@ -319,14 +319,11 @@ impl SystemInterface {
 
             // Reload the channel list (reloaded in the order they were defined)
             for channel in channel_list.drain(..) {
-                // If the channel is successfully defined
-                if let Ok(possible_stream) = self.media_playback.define_channel(channel) {
-                    // If a stream was created
-                    if let Some(video_stream) = possible_stream {
-                        // Pass the new video stream to the gtk interface
-                        self.interface_send
-                            .send(InterfaceUpdate::Video { video_stream });
-                    }
+                // If the channel is successfully defined and a stream created
+                if let Ok(Some(video_stream)) = self.media_playback.define_channel(channel) {
+                    // Pass the new video stream to the gtk interface
+                    self.interface_send
+                        .send(InterfaceUpdate::Video { video_stream });
                 }
             }
 
@@ -366,13 +363,13 @@ impl SystemInterface {
             info!(
                 "Seeking channel {} to {}.{:0>3}.",
                 channel,
-                (position / 1000 as u64),
+                (position / 1000_u64),
                 (position % 1000)
             );
 
             // Alert the user if seeking media failed
             if let Err(error) = self.media_playback.seek(ChannelSeek {
-                channel: channel.clone(),
+                channel: *channel,
                 position,
             }) {
                 error!("Unable to seek media on channel {}: {}", channel, error);

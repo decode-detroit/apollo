@@ -27,8 +27,8 @@ use std::sync::{Arc, Mutex};
 use gtk4::{glib, prelude::*};
 
 // Import Gstreamer Library
-use gstreamer as gst;
 use gst::prelude::*;
+use gstreamer as gst;
 
 // Import FNV HashMap
 use fnv::FnvHashMap;
@@ -70,7 +70,7 @@ impl MediaPlayback {
     ///
     pub fn all_stop(&self) -> Result<()> {
         // Stop the playing media on every channel
-        for (_, channel) in self.channels.iter() {
+        for channel in self.channels.values() {
             channel
                 .playbin
                 .set_state(gst::State::Null)
@@ -323,7 +323,7 @@ impl MediaPlayback {
                         };
 
                         // Try to stop any playing media
-                        if let Err(_) = channel.set_state(gst::State::Null) {
+                        if channel.set_state(gst::State::Null).is_err() {
                             // Share the error
                             error!("Unable to stop previously playing media.");
                         }
@@ -332,7 +332,7 @@ impl MediaPlayback {
                         channel.set_property("uri", &media);
 
                         // Try to start playing the media
-                        if let Err(_) = channel.set_state(gst::State::Playing) {
+                        if channel.set_state(gst::State::Playing).is_err() {
                             // Share the error
                             error!("Unable to start new media.");
                         }
@@ -346,11 +346,11 @@ impl MediaPlayback {
             // Warn the user of failure
         }) {
             // Return the watch guard
-            return Ok(watch_guard);
+            Ok(watch_guard)
 
         // Otherwise, indicate failure
         } else {
-            return Err(anyhow!("Unable to set loop media: Duplicate watch."));
+            Err(anyhow!("Unable to set loop media: Duplicate watch."))
         }
     }
 }
