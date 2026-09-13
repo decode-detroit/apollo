@@ -63,11 +63,8 @@ impl GtkInterface {
         // Create the empty placeholder window
         let empty_window = gtk4::ApplicationWindow::new(application);
 
-        // Create the video window
-        let video_window = VideoWindow::new();
-
-        // Wrap the video window in an rc and refcell
-        let video_window = Rc::new(RefCell::new(video_window));
+        // Create and wrap the video window in an rc and refcell
+        let video_window = Rc::new(RefCell::new(VideoWindow::new()));
 
         // Create the GtkInterface
         let gtk_interface = GtkInterface {

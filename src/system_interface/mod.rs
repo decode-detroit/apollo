@@ -45,9 +45,6 @@ use fnv::FnvHashSet;
 // Import tracing features
 use tracing::{error, info};
 
-// Import anyhow features
-use anyhow::Result;
-
 // Define timing constants
 const MEDIA_UPDATE_INTERVAL: u64 = 10; // the maximum gap between media seek updates, in seconds
 const RELOAD_SEEK_DELAY: u64 = 1000; // the amount of time to wait for media to begin before seeking to position, in milliseconds
@@ -72,12 +69,12 @@ impl SystemInterface {
         interface_send: InterfaceSend,
         user_address: Arc<Mutex<String>>,
         user_server_location: Arc<Mutex<Option<String>>>,
-    ) -> Result<(Self, WebSend)> {
+    ) -> (Self, WebSend) {
         // Create the web send for the web interface
         let (web_send, web_receive) = WebSend::new();
 
         // Try to initialize the media playback module
-        let media_playback = MediaPlayback::new()?;
+        let media_playback = MediaPlayback::new();
 
         // Try to extract the user defined address
         let mut address = DEFAULT_ADDRESS.to_string();
@@ -127,8 +124,8 @@ impl SystemInterface {
             windows: FnvHashSet::default(),
         };
 
-        // Regardless, return the new SystemInterface and general send line
-        Ok((sys_interface, web_send))
+        // Return the new SystemInterface and general send line
+        (sys_interface, web_send)
     }
 
     /// A method to run one iteration of the system interface to update the underlying system of any event changes.

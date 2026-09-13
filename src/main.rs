@@ -45,7 +45,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 // Import tracing features
-use tracing::{Level, error};
+use tracing::Level;
 
 // Import anyhow macro
 #[macro_use]
@@ -78,18 +78,9 @@ impl Apollo {
         let (interface_send, gtk_interface_recv) = InterfaceSend::new();
 
         // Launch the system interface to monitor and handle events
-        let (system_interface, web_send) = match runtime.block_on(async {
+        let (system_interface, web_send) = runtime.block_on(async {
             SystemInterface::new(interface_send.clone(), address.clone(), server_location).await
-        }) {
-            Ok(result) => result,
-            Err(error) => {
-                // Trace the error
-                error!("{}", error);
-
-                // Panic and exit
-                panic!("Unable to create System Interface: {}", error);
-            }
-        };
+        });
 
         // Create a new web interface
         let mut web_interface = WebInterface::new(web_send, address);
@@ -116,10 +107,17 @@ impl Apollo {
 /// to allow GTK+ to work its startup magic.
 ///
 fn main() -> glib::ExitCode {
+    // Try to initialize GStreamer
+    gstreamer::init().expect("Unable to initialize Gstreamer.");
+
+    // Try to initialize GTK
+    gtk4::init().expect("Unable to initialize GTK.");
+
+    // Register the GST-GTK plugin
+    gstgtk4::plugin_register_static().expect("Unable to register GST-GTK4 plugin.");
+
     // Create the gtk application window. Failure results in immediate panic!
-    let application = gtk4::Application::builder()
-        .application_id("com.decodedetroit.Apollo")
-        .build();
+    let application = gtk4::Application::builder().application_id("com.decodedetroit.Apollo").build();
 
     // Create the default address and backup server location
     let address = Arc::new(Mutex::new(String::from(DEFAULT_ADDRESS)));
@@ -244,18 +242,23 @@ fn main() -> glib::ExitCode {
                 .init();
         }
 
-        // Don't continue the application
-        return ControlFlow::Break(glib::ExitCode::new(1));
+        // Continue the application
+        ControlFlow::Continue(())
     });
 
-    // Create the program and launch the background thread
-    application.connect_startup(move |gtk_app| {
+    // Create the program and launch the background thread when activated
+    application.connect_activate(move |gtk_app| {
         Apollo::build_program(gtk_app, address.clone(), server_location.clone());
     });
 
-    // Connect the activate-specific function (as compared with open-specific function)
-    application.connect_activate(|_| {});
+    // Run the application until all the windows are closed        
+    let code = application.run();
 
-    // Run the application until all the windows are closed
-    application.run()
+    // Unload any gstreamer resources
+    unsafe {
+        gstreamer::deinit();
+    }
+
+    // Return the exit code
+    code
 }

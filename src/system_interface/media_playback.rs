@@ -60,17 +60,10 @@ pub struct MediaPlayback {
 impl MediaPlayback {
     /// A function to create a new instance of the MediaPlayback
     ///
-    pub fn new() -> Result<MediaPlayback> {
-        // Try to initialize GStreamer
-        gst::init().context("Unable to initialize Gstreamer.")?;
-
-        // Register the GST-GTK plugin
-        gstgtk4::plugin_register_static().context("Unable to register GST-GTK4 plugin.")?;
-
-        // Return the complete module
-        Ok(MediaPlayback {
+    pub fn new() -> MediaPlayback {
+        MediaPlayback {
             channels: FnvHashMap::default(),
-        })
+        }
     }
 
     /// A function to stop all playing media
