@@ -92,7 +92,7 @@ impl MediaPlayback {
         }
 
         // Create a new playbin
-        let playbin = gst::ElementFactory::make_with_name("playbin", None)
+        let playbin = gst::ElementFactory::make_with_name("playbin3", None) // Testing with playbin3
             .context("Unable to create playbin.")?;
 
         // Match based on the audio device specified
