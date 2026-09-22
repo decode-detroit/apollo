@@ -5,7 +5,7 @@ This media player is designed for realtime playback of audio and video in theatr
 
 ## Getting Started
 
-If you're on a 64-bit GNU/Linux system, you can use the the [binary release here](https://github.com/decode-detroit/apollo/releases). *Note:* The Wayland display server is not yet supported. Try the Wayland branch at your own risk.
+If you're on a 64-bit GNU/Linux system, you can use the the [binary release here](https://github.com/decode-detroit/apollo/releases). *Note:* This 2.0 version supports the Wayland display server, but has limited testing. We still recommend the x11 branch (version 1.0.3) if you can use X11.
 
 Binary releases for other systems are a work in progress. In the meantime, you'll need a few things to compile and run Apollo:
 
