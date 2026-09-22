@@ -22,7 +22,7 @@ glib = "0.22"
 cairo-rs = "0.22"
 gstreamer = "0.25"
 gstreamer-video = "0.25"
-gst-plugin-gtk4 = { version = "0.15", features = ["gtk_v4_14", "waylandegl"] }
+gst-plugin-gtk4 = { version = "0.15", features = ["gtk_v4_14", "waylandegl", "dmabuf"] }
 tokio = { version = "1.53", features = ["macros", "rt-multi-thread"] }
 warp = { version = "0.4", features = ["server"] }
 async-stream = "0.3"
