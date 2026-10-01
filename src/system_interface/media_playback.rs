@@ -92,8 +92,11 @@ impl MediaPlayback {
         }
 
         // Create a new playbin
-        let playbin = gst::ElementFactory::make_with_name("playbin3", None) // Testing with playbin3
+        let playbin = gst::ElementFactory::make_with_name("playbin3", None)
             .context("Unable to create playbin.")?;
+
+        // Set the instant uri property for fast input swtiching
+        playbin.set_property("instant-uri", true);
 
         // Match based on the audio device specified
         match media_channel.audio_device {
